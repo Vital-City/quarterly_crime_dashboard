@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_65.html -->
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_66.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -666,10 +666,11 @@ function rateLabel(loc) {
 }
 
 function getPctMonthlyCount(crime, pct, year, month, loc) {
-  // PCT_MONTHLY_DATA aggregates all loc_types together for each precinct
-  // (since precincts are geographic, the loc filter is applied at the data level)
   try {
-    const v = PCT_MONTHLY_DATA[crime]?.[`pct_${pct}`]?.[String(year)]?.[String(month)];
+    const slice = loc === "subway" ? PCT_MONTHLY_DATA.subway
+                : loc === "housing" ? PCT_MONTHLY_DATA.housing
+                : PCT_MONTHLY_DATA.citywide;
+    const v = slice?.[crime]?.[`pct_${pct}`]?.[String(year)]?.[String(month)];
     return v ? parseInt(v) : 0;
   } catch { return 0; }
 }
@@ -1256,8 +1257,9 @@ function render() {
       if(QUARTERS.indexOf(q)>uIdx) return 0;
       let raw;
       if (inPctMode) {
-        // Precinct mode — use real precinct monthly data
-        const hasPctMonthly = PCT_MONTHLY_DATA[crime]?.[`pct_${pct}`]?.[String(year)];
+        // Precinct mode — use real monthly data split by loc_type
+        const sliceKey = loc === "subway" ? "subway" : loc === "housing" ? "housing" : "citywide";
+        const hasPctMonthly = PCT_MONTHLY_DATA[sliceKey]?.[crime]?.[`pct_${pct}`]?.[String(year)];
         raw = hasPctMonthly
           ? getPctMonthlyCount(crime, pct, year, m, loc)
           : Math.round(getC(crime,loc,boro,year,q)/3);
@@ -1858,11 +1860,15 @@ function renderMap(crimeLabel, curQ, latestYear) {
 
     // Dynamic color scale — based on actual data range
     // For level mode, color by the actual value; for change modes, by % or abs change
+    // Exclude Precinct 22 (Central Park) from rate scale — no residents
+    const pctChangesForScale = mapIsRate
+      ? Object.fromEntries(Object.entries(pctChanges).filter(([k]) => k !== "22"))
+      : pctChanges;
     const changeVals = mapMetric === "level"
-      ? Object.values(pctChanges).map(c=>c.cur).filter(v=>v!=null&&v>0)
+      ? Object.values(pctChangesForScale).map(c=>c.cur).filter(v=>v!=null&&v>0)
       : mapMetric === "abs"
-        ? Object.values(pctChanges).map(c=>c.abs).filter(v=>v!=null)
-        : Object.values(pctChanges).map(c=>c.pct).filter(p=>p!=null);
+        ? Object.values(pctChangesForScale).map(c=>c.abs).filter(v=>v!=null)
+        : Object.values(pctChangesForScale).map(c=>c.pct).filter(p=>p!=null);
     const maxAbsPct = changeVals.length > 0
       ? Math.max(5, Math.ceil(Math.max(...changeVals.map(Math.abs)) / 5) * 5)
       : 30;
@@ -1897,10 +1903,14 @@ function renderMap(crimeLabel, curQ, latestYear) {
     geo.features.forEach(f => {
       const pct = parseInt(f.properties.precinct || 0);
       const change = pctChanges[pct];
-      const colorVal = mapMetric === "level" ? change?.cur
+      // Precinct 22 = Central Park — no resident population, skip for rate
+      const isP22 = pct === 22 && mapIsRate;
+      const colorVal = isP22 ? null
+                     : mapMetric === "level" ? change?.cur
                      : mapMetric === "abs"   ? change?.abs
                      : change?.pct;
-      const fillColor = change ? pctToColor(colorVal) : "#e8e6df";
+      const fillColor = isP22 ? "#e0e0e0"   // grey out Central Park in rate mode
+                      : change ? pctToColor(colorVal) : "#e8e6df";
 
       ctx.beginPath();
       const polys = f.geometry.type === "MultiPolygon"
@@ -2139,7 +2149,12 @@ async function boot() {
     housing:  rawPct.housing||{}
   };
   MONTHLY_DATA = raw.monthly_data || {};
-  PCT_MONTHLY_DATA = raw.pct_monthly_data || {};
+  const rawPctMonthly = raw.pct_monthly_data || {};
+  PCT_MONTHLY_DATA = {
+    citywide: rawPctMonthly.citywide || rawPctMonthly,  // backward compat
+    subway:   rawPctMonthly.subway   || {},
+    housing:  rawPctMonthly.housing  || {}
+  };
   PCT_POP = raw.precinct_population || {};
   buildApp();
   render();
