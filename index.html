@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_60.html -->
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_62.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NYC Quarterly Complaints Dashboard — Vital City</title>
-<link rel="stylesheet" href="./index_noheader_files/nlh6iak.css">
+<link rel="stylesheet" href="./index_files/nlh6iak.css">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1128,7 +1128,7 @@ function render() {
 
   // Precinct mode — override data access functions when a precinct is selected
   const pct = state.precinct;
-  const inPctMode = !!(pct && loc === "citywide");
+  const inPctMode = !!(pct);
 
   // isRate must be defined before geo labels (locLabel2 depends on it)
   const isRate = state.subwayRate;
