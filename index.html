@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_62.html -->
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_63.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -702,7 +702,7 @@ function deltaDisplay(curr, prev, cmpYr) {
 
 // ── State ────────────────────────────────────────────────────────────────────
 let DATA=null, META=null, PCT_DATA={}, PCT_POP={}, MONTHLY_DATA={}, PCT_MONTHLY_DATA={};
-let state = { crime:null, loc:"citywide", borough:"All boroughs", precinct:null, cmpYear:null, primaryYear:null, trendMode:"ytd", subwayRate:false, boroRateMode:"count", mapRateMode:"count", moversMode:"pct" };
+let state = { crime:null, loc:"citywide", borough:"All boroughs", precinct:null, cmpYear:null, primaryYear:null, trendMode:"ytd", subwayRate:false, boroRateMode:"count", mapMetric:"pct", mapView:"count", mapPeriod:"ytd", moversMode:"pct" };
 
 function getCount(crime,loc,boro,year,q) {
   try { const v=DATA[crime]?.[loc]?.[boro]?.[String(year)]?.[q]; return v?parseInt(v):0; } catch{return 0;}
@@ -928,10 +928,30 @@ function buildApp() {
           <div class="chart-sub" id="map-sub"></div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <div id="map-rate-ctrl" style="display:none;">
-            <div class="toggle-group" id="map-rate-toggle" style="height:26px;">
-              <button data-maprate="count" class="active" style="font-size:10px;padding:0 10px;">Count</button>
-              <button data-maprate="rate" style="font-size:10px;padding:0 10px;">Rate</button>
+          <div id="map-controls" style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span style="font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--charcoal);">Metric</span>
+              <div class="toggle-group" id="map-metric-toggle" style="height:26px;">
+                <button data-mapmetric="pct" class="active" style="font-size:10px;padding:0 10px;">% Change</button>
+                <button data-mapmetric="level" style="font-size:10px;padding:0 10px;">Level</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span style="font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--charcoal);">View</span>
+              <div class="toggle-group" id="map-view-toggle" style="height:26px;">
+                <button data-mapview="count" class="active" style="font-size:10px;padding:0 10px;">Count</button>
+                <button data-mapview="rate" id="map-view-rate" style="font-size:10px;padding:0 10px;">Rate</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span style="font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--charcoal);">Period</span>
+              <div class="toggle-group" id="map-period-toggle" style="height:26px;">
+                <button data-mapperiod="ytd" class="active" style="font-size:10px;padding:0 10px;">YTD</button>
+                <button data-mapperiod="Q1" style="font-size:10px;padding:0 10px;">Q1</button>
+                <button data-mapperiod="Q2" style="font-size:10px;padding:0 10px;">Q2</button>
+                <button data-mapperiod="Q3" style="font-size:10px;padding:0 10px;">Q3</button>
+                <button data-mapperiod="Q4" style="font-size:10px;padding:0 10px;">Q4</button>
+              </div>
             </div>
           </div>
           <div class="legend" id="map-legend" style="align-self:center;"></div>
@@ -1031,10 +1051,21 @@ function buildApp() {
     document.querySelectorAll("#boro-rate-toggle button").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active"); state.boroRateMode=btn.dataset.bororate; render();
   });
-  document.getElementById("map-rate-toggle").addEventListener("click", e=>{
+  document.getElementById("map-metric-toggle").addEventListener("click", e=>{
     const btn=e.target.closest("button"); if(!btn) return;
-    document.querySelectorAll("#map-rate-toggle button").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active"); state.mapRateMode=btn.dataset.maprate; render();
+    document.querySelectorAll("#map-metric-toggle button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active"); state.mapMetric=btn.dataset.mapmetric; render();
+  });
+  document.getElementById("map-view-toggle").addEventListener("click", e=>{
+    const btn=e.target.closest("button"); if(!btn) return;
+    document.querySelectorAll("#map-view-toggle button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active"); state.mapView=btn.dataset.mapview; render();
+  });
+  document.getElementById("map-period-toggle").addEventListener("click", e=>{
+    const btn=e.target.closest("button"); if(!btn) return;
+    if(btn.disabled) return;
+    document.querySelectorAll("#map-period-toggle button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active"); state.mapPeriod=btn.dataset.mapperiod; render();
   });
 
 
@@ -1044,6 +1075,9 @@ function buildApp() {
   state.trendMode   = "ytd";
   state.subwayRate  = false;
   state.boroRateMode = "count";
+  state.mapMetric = "pct";
+  state.mapView   = "count";
+  state.mapPeriod = "ytd";
   document.getElementById("sel-crime").value   = state.crime;
   document.getElementById("sel-primary").value = state.primaryYear;
   updatePrecinctDropdown();
@@ -1225,12 +1259,19 @@ function render() {
         raw = hasPctMonthly
           ? getPctMonthlyCount(crime, pct, year, m)
           : Math.round(getC(crime,loc,boro,year,q)/3);
-      } else {
-        // Borough/citywide — use real monthly data if available
+      } else if (boro !== "All boroughs") {
+        // Specific borough — use borough monthly data
         const locKey = loc==="subway"?"subway":loc==="housing"?"housing":"citywide";
         const hasMonthly = MONTHLY_DATA[crime]?.[locKey]?.[boro]?.[String(year)];
         raw = hasMonthly
           ? getMonthlyCount(crime, loc, boro, year, m)
+          : Math.round(getC(crime,loc,boro,year,q)/3);
+      } else {
+        // All boroughs — use citywide monthly data
+        const locKey = loc==="subway"?"subway":loc==="housing"?"housing":"citywide";
+        const hasMonthly = MONTHLY_DATA[crime]?.[locKey]?.["All boroughs"]?.[String(year)];
+        raw = hasMonthly
+          ? getMonthlyCount(crime, loc, "All boroughs", year, m)
           : Math.round(getC(crime,loc,boro,year,q)/3);
       }
       if (!isRate) return raw;
@@ -1700,20 +1741,44 @@ function renderMap(crimeLabel) {
   const isPrimaryLatest = String(primaryYear) === String(META.current_year);
   const primaryQ = isPrimaryLatest ? META.current_quarter : "Q4";
 
-  // Show/hide map rate toggle — only for citywide
-  const mapRateCtrl = document.getElementById("map-rate-ctrl");
-  const mapIsRate = state.mapRateMode === "rate" && loc === "citywide";
-  if (mapRateCtrl) mapRateCtrl.style.display = loc === "citywide" ? "" : "none";
-  if (loc !== "citywide" && state.mapRateMode === "rate") {
-    state.mapRateMode = "count";
-    document.querySelectorAll("#map-rate-toggle button").forEach(b=>{
-      b.classList.toggle("active", b.dataset.maprate==="count");
-    });
+  const mapMetric = state.mapMetric || "pct";   // pct | level
+  const mapView   = state.mapView   || "count";  // count | rate
+  const mapPeriod = state.mapPeriod || "ytd";    // ytd | Q1 | Q2 | Q3 | Q4
+  const mapIsRate = mapView === "rate" && loc === "citywide";
+
+  // Disable/grey future quarters
+  const curQIdx = QUARTERS.indexOf(curQ);
+  document.querySelectorAll("#map-period-toggle button[data-mapperiod]").forEach(btn => {
+    const p = btn.dataset.mapperiod;
+    if (p === "ytd") { btn.disabled = false; btn.style.opacity = ""; return; }
+    const qIdx = QUARTERS.indexOf(p);
+    const unavail = qIdx > curQIdx && String(primaryYear) === String(latestYear);
+    btn.disabled = unavail;
+    btn.style.opacity = unavail ? "0.35" : "";
+    if (unavail && state.mapPeriod === p) {
+      state.mapPeriod = "ytd";
+      document.querySelectorAll("#map-period-toggle button").forEach(b =>
+        b.classList.toggle("active", b.dataset.mapperiod === "ytd"));
+    }
+  });
+
+  // Hide rate button for non-citywide
+  const mapViewRate = document.getElementById("map-view-rate");
+  if (mapViewRate) {
+    mapViewRate.disabled = loc !== "citywide";
+    mapViewRate.style.opacity = loc !== "citywide" ? "0.35" : "";
+    if (loc !== "citywide" && mapView === "rate") {
+      state.mapView = "count";
+      document.querySelectorAll("#map-view-toggle button").forEach(b =>
+        b.classList.toggle("active", b.dataset.mapview === "count"));
+    }
   }
+
   const locLabel = loc === "subway" ? "Subway" : loc === "housing" ? "Housing" : "Citywide";
-  const mapRateLabel = mapIsRate ? " · per 100k residents" : "";
+  const periodLabel = mapPeriod === "ytd" ? `YTD Q1–${primaryQ}` : mapPeriod;
+  const metricLabel = mapMetric === "pct" ? `% change vs ${cmpYear}` : (mapIsRate ? "per 100k residents" : "complaints");
   document.getElementById("map-sub").textContent =
-    `${crimeLabel} · ${locLabel} · ${primaryYear} vs ${cmpYear} · Q1–${primaryQ}${mapRateLabel}`;
+    `${crimeLabel} · ${locLabel} · ${primaryYear} · ${periodLabel} · ${metricLabel}`;
 
   loadGeoData().then(geo => {
     const loading = document.getElementById("map-loading");
@@ -1788,14 +1853,24 @@ function renderMap(crimeLabel) {
     });
 
     // Dynamic color scale — based on actual data range
-    const validPcts = Object.values(pctChanges).map(c=>c.pct).filter(p=>p!=null);
-    const maxAbsPct = validPcts.length > 0
-      ? Math.max(5, Math.ceil(Math.max(...validPcts.map(Math.abs)) / 5) * 5)
+    // For level mode, color by the actual value; for change modes, by % or abs change
+    const changeVals = mapMetric === "level"
+      ? Object.values(pctChanges).map(c=>c.cur).filter(v=>v!=null&&v>0)
+      : mapMetric === "abs"
+        ? Object.values(pctChanges).map(c=>c.abs).filter(v=>v!=null)
+        : Object.values(pctChanges).map(c=>c.pct).filter(p=>p!=null);
+    const maxAbsPct = changeVals.length > 0
+      ? Math.max(5, Math.ceil(Math.max(...changeVals.map(Math.abs)) / 5) * 5)
       : 30;
-    const SCALE_MAX = Math.min(maxAbsPct, 60);
+    const SCALE_MAX = Math.min(maxAbsPct, mapMetric === "level" ? Infinity : 60);
 
     function pctToColor(pctVal) {
       if (pctVal === null) return "#e2e2e2";
+      if (mapMetric === "level") {
+        // Single-hue: white → orange for level display
+        const t = Math.min(1, pctVal / SCALE_MAX);
+        return interpolateColor("#efefef", "#ff7c53", t);
+      }
       const clamped = Math.max(-SCALE_MAX, Math.min(SCALE_MAX, pctVal));
       if (clamped < 0) {
         const t = Math.abs(clamped) / SCALE_MAX;
@@ -1818,7 +1893,10 @@ function renderMap(crimeLabel) {
     geo.features.forEach(f => {
       const pct = parseInt(f.properties.precinct || 0);
       const change = pctChanges[pct];
-      const fillColor = change ? pctToColor(change.pct) : "#e8e6df";
+      const colorVal = mapMetric === "level" ? change?.cur
+                     : mapMetric === "abs"   ? change?.abs
+                     : change?.pct;
+      const fillColor = change ? pctToColor(colorVal) : "#e8e6df";
 
       ctx.beginPath();
       const polys = f.geometry.type === "MultiPolygon"
@@ -1914,12 +1992,27 @@ function renderMap(crimeLabel) {
         return pctToColor(pctVal);
       });
       const gradientCss = `linear-gradient(to right, ${swatches.join(",")})`;
-      legendEl.innerHTML = `
-        <span style="font-size:10px;font-weight:700;color:#2d8a3e;margin-right:4px;">−${SCALE_MAX}%</span>
-        <span style="display:inline-block;width:160px;height:14px;background:${gradientCss};border:1px solid rgba(0,0,0,0.12);vertical-align:middle;"></span>
-        <span style="font-size:10px;font-weight:700;color:#c0392b;margin-left:4px;">+${SCALE_MAX}%</span>
-        <span style="font-size:10px;color:var(--text3);margin-left:8px;">neutral = no change</span>
-      `;
+      if (mapMetric === "level") {
+        legendEl.innerHTML = `
+          <span style="font-size:10px;color:var(--text3);margin-right:4px;">0</span>
+          <span style="display:inline-block;width:160px;height:14px;background:${gradientCss};border:1px solid rgba(0,0,0,0.12);vertical-align:middle;"></span>
+          <span style="font-size:10px;font-weight:700;color:#ff7c53;margin-left:4px;">${SCALE_MAX}${mapIsRate?" per 100k":""}</span>
+        `;
+      } else if (mapMetric === "abs") {
+        legendEl.innerHTML = `
+          <span style="font-size:10px;font-weight:700;color:#2d8a3e;margin-right:4px;">−${SCALE_MAX}</span>
+          <span style="display:inline-block;width:160px;height:14px;background:${gradientCss};border:1px solid rgba(0,0,0,0.12);vertical-align:middle;"></span>
+          <span style="font-size:10px;font-weight:700;color:#c0392b;margin-left:4px;">+${SCALE_MAX}</span>
+          <span style="font-size:10px;color:var(--text3);margin-left:8px;">vs ${cmpYear}</span>
+        `;
+      } else {
+        legendEl.innerHTML = `
+          <span style="font-size:10px;font-weight:700;color:#2d8a3e;margin-right:4px;">−${SCALE_MAX}%</span>
+          <span style="display:inline-block;width:160px;height:14px;background:${gradientCss};border:1px solid rgba(0,0,0,0.12);vertical-align:middle;"></span>
+          <span style="font-size:10px;font-weight:700;color:#c0392b;margin-left:4px;">+${SCALE_MAX}%</span>
+          <span style="font-size:10px;color:var(--text3);margin-left:8px;">vs ${cmpYear}</span>
+        `;
+      }
     }
 
     // Tooltip on hover
@@ -1950,18 +2043,27 @@ function renderMap(crimeLabel) {
       const tt = document.getElementById("map-tooltip");
       if (hit && hit.change) {
         const { pct, change } = hit;
-        const pctStr = change.pct == null ? "—"
-          : (change.pct > 0 ? "▲ +" : "▼ ") + change.pct.toFixed(1) + "%";
-        const col = change.pct == null ? "#707175"
-          : change.pct > 0 ? "#d2232a" : "#3a7a1e";
-        const valFmt = mapIsRate
-          ? v => v.toFixed(1)
-          : v => fmt(v);
+        const valFmt = mapIsRate ? v => v.toFixed(1) : v => fmt(v);
         const valUnit = mapIsRate ? " per 100k" : " complaints";
         const curDisp = valFmt(change.cur) + valUnit;
         const prvDisp = valFmt(change.prv) + valUnit;
+        let mainLine, col;
+        if (mapMetric === "level") {
+          col = "#ff7c53";
+          mainLine = `${curDisp} · ${periodLabel}`;
+        } else if (mapMetric === "abs") {
+          const diff = change.abs;
+          col = diff > 0 ? "#d2232a" : "#2d8a3e";
+          const sign = diff >= 0 ? "+" : "";
+          mainLine = `${sign}${valFmt(diff)}${valUnit} vs ${cmpYear}`;
+        } else {
+          const pctVal = change.pct;
+          col = pctVal == null ? "#707175" : pctVal > 0 ? "#d2232a" : "#2d8a3e";
+          mainLine = pctVal == null ? "—"
+            : (pctVal > 0 ? "▲ +" : "▼ ") + pctVal.toFixed(1) + `% vs ${cmpYear}`;
+        }
         tt.innerHTML = `<strong>${pctLabel(pct)}</strong><br>
-          <span style="color:${col};font-weight:700;">${pctStr} vs ${cmpYear}</span><br>
+          <span style="color:${col};font-weight:700;">${mainLine}</span><br>
           ${primaryYear}: ${curDisp} &nbsp;·&nbsp; ${cmpYear}: ${prvDisp}`;
         tt.classList.add("visible");
         // Position tooltip
