@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_66.html -->
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_67.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -965,6 +965,9 @@ function buildApp() {
         <canvas id="map-canvas" style="width:100%;height:100%;display:block;"></canvas>
         <div id="map-tooltip" class="tooltip"></div>
       </div>
+      <div id="map-rate-note" style="display:none;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.5;">
+        <strong style="color:var(--text);font-weight:700;">Note:</strong> Precincts 14 (Midtown South), 18 (Midtown North), and 22 (Central Park) are grayed out in rate view. Their resident populations are too small to produce meaningful per-capita rates — daytime populations from commuters and tourists far exceed the number of people who live there.
+      </div>
       <div style="margin-top:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 12px;background:#ffffff;border:1px solid var(--border);">
         <div style="font-size:9px;font-weight:700;color:var(--text2);letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;">% change vs prior year</div>
         <div id="map-scale" style="display:flex;align-items:center;gap:0;font-size:10px;color:var(--text2);"></div>
@@ -1779,6 +1782,9 @@ function renderMap(crimeLabel, curQ, latestYear) {
         b.classList.toggle("active", b.dataset.mapview === "count"));
     }
   }
+  // Show note when rate is active
+  const mapRateNote = document.getElementById("map-rate-note");
+  if (mapRateNote) mapRateNote.style.display = mapIsRate ? "block" : "none";
 
   const locLabel = loc === "subway" ? "Subway" : loc === "housing" ? "Housing" : "Citywide";
   const periodLabel = mapPeriod === "ytd" ? `YTD Q1–${primaryQ}` : mapPeriod;
@@ -1860,9 +1866,10 @@ function renderMap(crimeLabel, curQ, latestYear) {
 
     // Dynamic color scale — based on actual data range
     // For level mode, color by the actual value; for change modes, by % or abs change
-    // Exclude Precinct 22 (Central Park) from rate scale — no residents
+    // Exclude low-residential precincts from rate scale (Central Park, Midtown)
+    const RATE_SKIP = new Set(["14","18","22"]);
     const pctChangesForScale = mapIsRate
-      ? Object.fromEntries(Object.entries(pctChanges).filter(([k]) => k !== "22"))
+      ? Object.fromEntries(Object.entries(pctChanges).filter(([k]) => !RATE_SKIP.has(k)))
       : pctChanges;
     const changeVals = mapMetric === "level"
       ? Object.values(pctChangesForScale).map(c=>c.cur).filter(v=>v!=null&&v>0)
@@ -1903,13 +1910,15 @@ function renderMap(crimeLabel, curQ, latestYear) {
     geo.features.forEach(f => {
       const pct = parseInt(f.properties.precinct || 0);
       const change = pctChanges[pct];
-      // Precinct 22 = Central Park — no resident population, skip for rate
-      const isP22 = pct === 22 && mapIsRate;
-      const colorVal = isP22 ? null
+      // Precincts with very low/no residential population — grey out for rate mode
+      // 22 = Central Park, 14 = Midtown South, 18 = Midtown North
+      const RATE_SKIP_PCTS = new Set([14, 18, 22]);
+      const skipForRate = mapIsRate && RATE_SKIP_PCTS.has(pct);
+      const colorVal = skipForRate ? null
                      : mapMetric === "level" ? change?.cur
                      : mapMetric === "abs"   ? change?.abs
                      : change?.pct;
-      const fillColor = isP22 ? "#e0e0e0"   // grey out Central Park in rate mode
+      const fillColor = skipForRate ? "#d8d8d8"
                       : change ? pctToColor(colorVal) : "#e8e6df";
 
       ctx.beginPath();
@@ -2057,6 +2066,18 @@ function renderMap(crimeLabel, curQ, latestYear) {
       const tt = document.getElementById("map-tooltip");
       if (hit && hit.change) {
         const { pct, change } = hit;
+        // Grey-out precincts show a note instead
+        const RATE_SKIP_PCTS_TT = new Set([14, 18, 22]);
+        if (mapIsRate && RATE_SKIP_PCTS_TT.has(pct)) {
+          tt.innerHTML = `<strong>${pctLabel(pct)}</strong><br>
+            <span style="color:var(--text2);font-size:11px;">Rate unavailable — very low resident population</span>`;
+          tt.classList.add("visible");
+          const ttW = tt.offsetWidth || 220;
+          tt.style.left = (mx + 14) + "px";
+          tt.style.top = Math.max(4, my - 30) + "px";
+          canvas.style.cursor = "default";
+          return;
+        }
         const valFmt = mapIsRate ? v => v.toFixed(1) : v => fmt(v);
         const valUnit = mapIsRate ? " per 100k" : " complaints";
         const curDisp = valFmt(change.cur) + valUnit;

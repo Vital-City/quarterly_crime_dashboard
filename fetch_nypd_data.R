@@ -519,44 +519,53 @@ for (i in seq_len(nrow(agg_monthly))) {
 }
 cat(sprintf("  Monthly data built\n"))
 
-# ── Precinct monthly aggregation ─────────────────────────────────────────────
+# ── Precinct monthly aggregation — split by loc_type ────────────────────────
 cat("Building precinct monthly data...\n")
 rows_pct_monthly <- all_rows[!is.na(all_rows$precinct) & all_rows$precinct > 0 & !is.na(all_rows$month), ]
 rows_pct_monthly$pct_key <- paste0("pct_", rows_pct_monthly$precinct)
 
-agg_pct_monthly <- aggregate(n ~ ofns_desc + pct_key + yr + month, data = rows_pct_monthly, FUN = sum)
-
-# Add crime groups
-pct_monthly_group_rows <- list()
-for (gname in names(CRIME_GROUPS)) {
-  members <- CRIME_GROUPS[[gname]]
-  sub_pm <- agg_pct_monthly[agg_pct_monthly$ofns_desc %in% members, ]
-  if (nrow(sub_pm) == 0) next
-  g_pm <- aggregate(n ~ pct_key + yr + month, data = sub_pm, FUN = sum)
-  g_pm$ofns_desc <- gname
-  pct_monthly_group_rows[[gname]] <- g_pm[, names(agg_pct_monthly)]
+build_pct_monthly_slice <- function(rows_subset) {
+  if (nrow(rows_subset) == 0) return(list())
+  agg <- aggregate(n ~ ofns_desc + pct_key + yr + month, data = rows_subset, FUN = sum)
+  group_rows <- list()
+  for (gname in names(CRIME_GROUPS)) {
+    members <- CRIME_GROUPS[[gname]]
+    sub_m <- agg[agg$ofns_desc %in% members, ]
+    if (nrow(sub_m) == 0) next
+    g_m <- aggregate(n ~ pct_key + yr + month, data = sub_m, FUN = sum)
+    g_m$ofns_desc <- gname
+    group_rows[[gname]] <- g_m[, names(agg)]
+  }
+  all_c <- aggregate(n ~ pct_key + yr + month, data = rows_subset, FUN = sum)
+  all_c$ofns_desc <- "All crime"
+  final <- rbind(agg,
+    if (length(group_rows) > 0) do.call(rbind, group_rows) else NULL,
+    all_c[, names(agg)]
+  )
+  out <- list()
+  for (i in seq_len(nrow(final))) {
+    cr <- final$ofns_desc[i]; pk <- final$pct_key[i]
+    yr <- final$yr[i];        mo <- as.character(final$month[i])
+    n  <- final$n[i]
+    if (is.null(out[[cr]]))             out[[cr]]             <- list()
+    if (is.null(out[[cr]][[pk]]))       out[[cr]][[pk]]       <- list()
+    if (is.null(out[[cr]][[pk]][[yr]])) out[[cr]][[pk]][[yr]] <- list()
+    out[[cr]][[pk]][[yr]][[mo]] <- n
+  }
+  out
 }
-# All crime
-all_crime_pct_monthly <- aggregate(n ~ pct_key + yr + month, data = rows_pct_monthly, FUN = sum)
-all_crime_pct_monthly$ofns_desc <- "All crime"
-agg_pct_monthly <- rbind(
-  agg_pct_monthly,
-  if (length(pct_monthly_group_rows) > 0) do.call(rbind, pct_monthly_group_rows) else NULL,
-  all_crime_pct_monthly[, names(agg_pct_monthly)]
+
+pct_monthly_citywide <- build_pct_monthly_slice(rows_pct_monthly[rows_pct_monthly$loc_type == "other",  ])
+pct_monthly_subway   <- build_pct_monthly_slice(rows_pct_monthly[rows_pct_monthly$loc_type == "subway", ])
+pct_monthly_housing  <- build_pct_monthly_slice(rows_pct_monthly[rows_pct_monthly$loc_type == "housing",])
+
+pct_monthly_data_out <- list(
+  citywide = pct_monthly_citywide,
+  subway   = pct_monthly_subway,
+  housing  = pct_monthly_housing
 )
+cat(sprintf("  Precinct monthly data built (citywide/subway/housing)\n"))
 
-# Build nested: pct_monthly_data_out[[crime]][[pct_key]][[year]][[month]] = n
-pct_monthly_data_out <- list()
-for (i in seq_len(nrow(agg_pct_monthly))) {
-  cr  <- agg_pct_monthly$ofns_desc[i]; pk <- agg_pct_monthly$pct_key[i]
-  yr  <- agg_pct_monthly$yr[i];        mo <- as.character(agg_pct_monthly$month[i])
-  n   <- agg_pct_monthly$n[i]
-  if (is.null(pct_monthly_data_out[[cr]]))             pct_monthly_data_out[[cr]]             <- list()
-  if (is.null(pct_monthly_data_out[[cr]][[pk]]))       pct_monthly_data_out[[cr]][[pk]]       <- list()
-  if (is.null(pct_monthly_data_out[[cr]][[pk]][[yr]])) pct_monthly_data_out[[cr]][[pk]][[yr]] <- list()
-  pct_monthly_data_out[[cr]][[pk]][[yr]][[mo]] <- n
-}
-cat(sprintf("  Precinct monthly data built\n"))
 
 output <- list(
   meta = list(
