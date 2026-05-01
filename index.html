@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_74.html -->
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_75.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -971,7 +971,7 @@ function buildApp() {
         <strong style="color:var(--text);font-weight:700;">Note:</strong> Precincts 14 (Midtown South), 18 (Midtown North), and 22 (Central Park) are grayed out in rate view. Their resident populations are too small to produce meaningful per-capita rates — daytime populations from commuters and tourists far exceed the number of people who live there.
       </div>
       <div style="margin-top:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 12px;background:#ffffff;border:1px solid var(--border);">
-        <div style="font-size:9px;font-weight:700;color:var(--text2);letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;">% change vs prior year</div>
+        <div id="map-legend-label" style="font-size:9px;font-weight:700;color:var(--text2);letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;">% change vs prior year</div>
         <div id="map-scale" style="display:flex;align-items:center;gap:0;font-size:10px;color:var(--text2);"></div>
         <div style="font-size:10px;color:var(--text3);margin-left:auto;">Hover a precinct for details · Click to filter charts</div>
       </div>
@@ -1799,6 +1799,20 @@ function renderMap(crimeLabel, curQ, latestYear) {
   // Show note when rate is active
   const mapRateNote = document.getElementById("map-rate-note");
   if (mapRateNote) mapRateNote.style.display = mapIsRate ? "block" : "none";
+
+  // Update legend label dynamically
+  const mapLegendLabel = document.getElementById("map-legend-label");
+  if (mapLegendLabel) {
+    const unitStr = mapIsRate ? " per 100k residents" : " complaints";
+    const periodStr = mapPeriod === "ytd" ? `YTD Q1–${primaryQ}` : mapPeriod;
+    if (mapMetric === "pct") {
+      mapLegendLabel.textContent = `% change vs ${cmpYear} · ${periodStr}`;
+    } else if (mapMetric === "abs") {
+      mapLegendLabel.textContent = `Change in ${unitStr.trim()} vs ${cmpYear} · ${periodStr}`;
+    } else {
+      mapLegendLabel.textContent = `${unitStr.trim()} · ${periodStr} · ${primaryYear}`;
+    }
+  }
 
   const locLabel = loc === "subway" ? "Subway" : loc === "housing" ? "Housing" : "Citywide";
   const periodLabel = mapPeriod === "ytd" ? `YTD Q1–${primaryQ}` : mapPeriod;
