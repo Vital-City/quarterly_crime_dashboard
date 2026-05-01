@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_70.html -->
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_71.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -843,27 +843,6 @@ function buildApp() {
 
     <div class="metrics" id="metrics-row"></div>
 
-    <div class="movers-section" id="movers-section">
-      <div class="chart-rule"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-        <div class="chart-title">Top movers — YTD</div>
-        <div class="toggle-group" id="movers-mode-toggle" style="height:26px;">
-          <button data-moversmode="pct" class="active" style="font-size:10px;padding:0 10px;">% change</button>
-          <button data-moversmode="abs" style="font-size:10px;padding:0 10px;">Absolute change</button>
-        </div>
-      </div>
-      <div class="movers-grid">
-        <div class="movers-col">
-          <div class="movers-col-title up" id="movers-up-title">▲ Top 5 increases</div>
-          <div id="movers-up-list"></div>
-        </div>
-        <div class="movers-col">
-          <div class="movers-col-title down" id="movers-down-title">▼ Top 5 decreases</div>
-          <div id="movers-down-list"></div>
-        </div>
-      </div>
-    </div>
-
     <div class="two-col-equal">
       <div class="chart-section">
         <div class="chart-rule"></div>
@@ -993,6 +972,27 @@ function buildApp() {
         <p><strong>Borough rates:</strong> Expressed as complaints per 100,000 residents. Population denominators use U.S. Census Bureau American Community Survey annual estimates for each borough, updated through 2023; 2024 and 2025 use 2023 estimates.</p>
         <p><strong>Precincts:</strong> Precinct-level counts reflect all complaints with a precinct number assigned, including subway and public housing incidents — showing where crimes occurred geographically. The map can display counts or rates per 100,000 residents (citywide only). Precinct populations are from the 2020 U.S. Census, spatially joined to precinct boundaries by John Keefe/WNYC.</p>
         <p><strong>Update schedule:</strong> Data is refreshed quarterly, typically within 4–6 weeks of a quarter's end as NYPD finalizes complaint records. Historical data may be revised in subsequent updates.</p>
+      </div>
+    </div>
+
+    <div class="movers-section" id="movers-section">
+      <div class="chart-rule"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <div class="chart-title">Top movers — YTD</div>
+        <div class="toggle-group" id="movers-mode-toggle" style="height:26px;">
+          <button data-moversmode="pct" class="active" style="font-size:10px;padding:0 10px;">% change</button>
+          <button data-moversmode="abs" style="font-size:10px;padding:0 10px;">Absolute change</button>
+        </div>
+      </div>
+      <div class="movers-grid">
+        <div class="movers-col">
+          <div class="movers-col-title up" id="movers-up-title">▲ Top 5 increases</div>
+          <div id="movers-up-list"></div>
+        </div>
+        <div class="movers-col">
+          <div class="movers-col-title down" id="movers-down-title">▼ Top 5 decreases</div>
+          <div id="movers-down-list"></div>
+        </div>
       </div>
     </div>
 
