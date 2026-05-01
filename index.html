@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_72.html -->
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_73.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -908,6 +908,74 @@ function buildApp() {
         <div class="boro-list" id="boro-list"></div>
       </div>
     </div>
+
+    <!-- Map section -->
+    <div class="chart-section" style="margin-bottom:3rem;">
+      <div class="chart-rule"></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+        <div>
+          <div class="chart-title">YTD change by precinct</div>
+          <div class="chart-sub" id="map-sub"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div id="map-controls" style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span style="font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--charcoal);">Metric</span>
+              <div class="toggle-group" id="map-metric-toggle" style="height:26px;">
+                <button data-mapmetric="pct" class="active" style="font-size:10px;padding:0 10px;">% Change</button>
+                <button data-mapmetric="level" style="font-size:10px;padding:0 10px;">Level</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span style="font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--charcoal);">View</span>
+              <div class="toggle-group" id="map-view-toggle" style="height:26px;">
+                <button data-mapview="count" class="active" style="font-size:10px;padding:0 10px;">Count</button>
+                <button data-mapview="rate" id="map-view-rate" style="font-size:10px;padding:0 10px;">Rate</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <span style="font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--charcoal);">Period</span>
+              <div class="toggle-group" id="map-period-toggle" style="height:26px;">
+                <button data-mapperiod="ytd" class="active" style="font-size:10px;padding:0 10px;">YTD</button>
+                <button data-mapperiod="Q1" style="font-size:10px;padding:0 10px;">Q1</button>
+                <button data-mapperiod="Q2" style="font-size:10px;padding:0 10px;">Q2</button>
+                <button data-mapperiod="Q3" style="font-size:10px;padding:0 10px;">Q3</button>
+                <button data-mapperiod="Q4" style="font-size:10px;padding:0 10px;">Q4</button>
+              </div>
+            </div>
+          </div>
+          <div class="legend" id="map-legend" style="align-self:center;"></div>
+        </div>
+      </div>
+      <div id="map-container" style="width:100%;height:clamp(480px,75vw,820px);position:relative;">
+        <div id="map-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text2);">Loading map…</div>
+        <canvas id="map-canvas" style="width:100%;height:100%;display:block;"></canvas>
+        <div id="map-tooltip" class="tooltip"></div>
+      </div>
+      <div id="map-rate-note" style="display:none;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.5;">
+        <strong style="color:var(--text);font-weight:700;">Note:</strong> Precincts 14 (Midtown South), 18 (Midtown North), and 22 (Central Park) are grayed out in rate view. Their resident populations are too small to produce meaningful per-capita rates — daytime populations from commuters and tourists far exceed the number of people who live there.
+      </div>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 12px;background:#ffffff;border:1px solid var(--border);">
+        <div style="font-size:9px;font-weight:700;color:var(--text2);letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;">% change vs prior year</div>
+        <div id="map-scale" style="display:flex;align-items:center;gap:0;font-size:10px;color:var(--text2);"></div>
+        <div style="font-size:10px;color:var(--text3);margin-left:auto;">Hover a precinct for details · Click to filter charts</div>
+      </div>
+    </div>
+
+    <div class="methodology">
+      <div class="meth-title">Methodology</div>
+      <div class="meth-body">
+        <p><strong>Data source:</strong> NYPD Complaint Data (Historic and Year-to-Date), NYC Open Data. Each record represents a criminal complaint report filed with the NYPD. Counts reflect the date the complaint was <em>reported</em> (<code>rpt_dt</code>), not the date the crime occurred, ensuring complete quarterly coverage.</p>
+        <p><strong>Crime categories:</strong> Individual offense types are included in the dropdown only if they recorded more than 100 complaints in the current year citywide. This threshold removes extremely rare offenses that produce noisy, unreliable trend lines. The Major 7 crimes (murder, rape, robbery, felony assault, burglary, grand larceny, and grand larceny of motor vehicle) are always shown regardless of count. Combined categories — All crime, Major crimes, Major violent crimes, and Major property crimes — aggregate all qualifying complaints and are not subject to the 100-incident threshold.</p>
+        <p><strong>Location:</strong> Citywide counts include all NYPD complaint records for a given geography. Subway counts use NYPD jurisdiction code 1 (Transit Bureau); public housing counts use jurisdiction code 2 (Housing Bureau). These reflect how NYPD classifies each incident, not the physical location of the crime.</p>
+        <p><strong>Subway rate:</strong> Expressed as complaints per million rides. Ridership figures for 2018–present are quarterly totals from the MTA Monthly Ridership dataset (data.ny.gov). Pre-2018 figures use official annual totals from MTA annual reports and the NYU Wagner "State of Subway Ridership" study (2017), distributed across quarters using a seasonal approximation (Q1: 24%, Q2: 26%, Q3: 27%, Q4: 23%). Pre-2018 quarterly rates should be treated as estimates.</p>
+        <p><strong>Borough rates:</strong> Expressed as complaints per 100,000 residents. Population denominators use U.S. Census Bureau American Community Survey annual estimates for each borough, updated through 2023; 2024 and 2025 use 2023 estimates.</p>
+        <p><strong>Precincts:</strong> Precinct-level counts reflect all complaints with a precinct number assigned, including subway and public housing incidents — showing where crimes occurred geographically. The map can display counts or rates per 100,000 residents (citywide only). Precinct populations are from the 2020 U.S. Census, spatially joined to precinct boundaries by John Keefe/WNYC.</p>
+        <p><strong>Update schedule:</strong> Data is refreshed quarterly, typically within 4–6 weeks of a quarter's end as NYPD finalizes complaint records. Historical data may be revised in subsequent updates.</p>
+      </div>
+    </div>
+
+
 
     <!-- Map section -->
     <div class="chart-section" style="margin-bottom:3rem;">
