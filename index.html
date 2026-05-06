@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_79.html -->
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_80.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1590,9 +1590,10 @@ function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplet
   const niceMax = Math.ceil(rawMax / magnitude) * magnitude || 1;
   const TICKS=4;
   const n=labels.length;
-  const step=cW/Math.max(n-1,1);
+  // Add half-step padding on each side so first/last points aren't at edges
+  const step=cW/Math.max(n,1);
 
-  function px(i){return PL+i*step;}
+  function px(i){return PL+step/2+i*step;}
   function py(v){return PT+cH-((v-niceMin)/(niceMax-niceMin))*cH;}
 
   function paint(hovIdx) {
