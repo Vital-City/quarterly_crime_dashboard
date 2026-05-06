@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_78.html -->
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_79.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1573,7 +1573,7 @@ function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplet
   // xOverride: array of display labels for x-axis (sparse, empty string = skip)
   // incomplete: array of booleans — true = this point is partial data
   const {ctx, W, H} = getCanvas(id, 200);
-  const PL=44, PR=24, PT=10, PB=28;
+  const PL=44, PR=40, PT=14, PB=28;
   const cW=W-PL-PR, cH=H-PT-PB;
   const validData=data.filter(v=>v>0);
   const mx=Math.max(...(validData.length?validData:[1]));
