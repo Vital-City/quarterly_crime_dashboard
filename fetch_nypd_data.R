@@ -397,14 +397,18 @@ ANNUAL_RIDERSHIP_PRE2018 <- c(
 
 subway_ridership <- list()
 
-# Populate pre-2018 by dividing annual total evenly across 4 quarters
+# Populate pre-2018 by distributing annual total across quarters and months
 for (yr_name in names(ANNUAL_RIDERSHIP_PRE2018)) {
   annual <- ANNUAL_RIDERSHIP_PRE2018[[yr_name]]
+  q1 <- round(annual * 0.24); q2 <- round(annual * 0.26)
+  q3 <- round(annual * 0.27); q4 <- round(annual * 0.23)
   subway_ridership[[yr_name]] <- list(
-    Q1 = round(annual * 0.24),  # Q1 slightly lower (winter)
-    Q2 = round(annual * 0.26),  # Q2/Q3 higher (summer)
-    Q3 = round(annual * 0.27),
-    Q4 = round(annual * 0.23)   # Q4 slightly lower
+    Q1 = q1, Q2 = q2, Q3 = q3, Q4 = q4,
+    # Monthly estimates: distribute each quarter evenly across 3 months
+    "1" = round(q1/3), "2" = round(q1/3), "3" = round(q1/3),
+    "4" = round(q2/3), "5" = round(q2/3), "6" = round(q2/3),
+    "7" = round(q3/3), "8" = round(q3/3), "9" = round(q3/3),
+    "10"= round(q4/3), "11"= round(q4/3), "12"= round(q4/3)
   )
 }
 cat(sprintf("  Pre-2018 ridership hardcoded for %d years\n", length(ANNUAL_RIDERSHIP_PRE2018)))
@@ -431,6 +435,7 @@ if (!is.null(mta_resp) && !http_error(mta_resp)) {
     mta_data$quarter <- ifelse(mta_data$mo <= 3, "Q1",
                         ifelse(mta_data$mo <= 6, "Q2",
                         ifelse(mta_data$mo <= 9, "Q3", "Q4")))
+    # Store quarterly totals
     mta_qtr <- aggregate(ridership ~ yr + quarter, data = mta_data, FUN = sum)
     for (i in seq_len(nrow(mta_qtr))) {
       yr_key <- as.character(mta_qtr$yr[i])
@@ -438,7 +443,14 @@ if (!is.null(mta_resp) && !http_error(mta_resp)) {
       if (is.null(subway_ridership[[yr_key]])) subway_ridership[[yr_key]] <- list()
       subway_ridership[[yr_key]][[qt_key]] <- round(mta_qtr$ridership[i])
     }
-    cat(sprintf("  API ridership loaded for 2018-%d\n", max(mta_qtr$yr)))
+    # Store monthly ridership too — keyed by month number
+    for (i in seq_len(nrow(mta_data))) {
+      yr_key <- as.character(mta_data$yr[i])
+      mo_key <- as.character(mta_data$mo[i])
+      if (is.null(subway_ridership[[yr_key]])) subway_ridership[[yr_key]] <- list()
+      subway_ridership[[yr_key]][[mo_key]] <- round(mta_data$ridership[i])
+    }
+    cat(sprintf("  API ridership loaded for 2018-%d (quarterly + monthly)\n", max(mta_qtr$yr)))
   }
 } else {
   cat("  WARNING: MTA API fetch failed — using pre-2018 data only\n")

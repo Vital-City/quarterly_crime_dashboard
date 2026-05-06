@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_82.html -->
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_84.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -624,6 +624,16 @@ function getSubwayRidership(year, quarter) {
   const yr = META.subway_ridership[String(year)];
   if (!yr) return null;
   return yr[quarter] || null;
+}
+function getSubwayRidershipMonth(year, month) {
+  if (!META.subway_ridership) return null;
+  const yr = META.subway_ridership[String(year)];
+  if (!yr) return null;
+  // Try real monthly first, fall back to quarterly/3
+  const monthly = yr[String(month)];
+  if (monthly) return monthly;
+  const q = month <= 3 ? "Q1" : month <= 6 ? "Q2" : month <= 9 ? "Q3" : "Q4";
+  return yr[q] ? Math.round(yr[q] / 3) : null;
 }
 function getSubwayRidershipYTD(year, upToQ) {
   const qi = QUARTERS.indexOf(upToQ); let t = 0;
@@ -1291,9 +1301,16 @@ function render() {
           : Math.round(getC(crime,loc,boro,year,q)/3);
       }
       if (!isRate) return raw;
-      const qTotal = getC(crime,loc,boro,year,q);
-      const r = toRate(qTotal,loc,boro,year,q,null);
-      return r==null ? 0 : Math.round((r/3)*10)/10;
+      // Use real monthly ridership from MTA API (2018+), quarterly/3 estimate pre-2018
+      if (loc === "subway") {
+        const monthlyRides = getSubwayRidershipMonth(year, m);
+        if (!monthlyRides) return 0;
+        return Math.round((raw / monthlyRides) * 1000000 * 10) / 10;
+      } else {
+        const pop = getPopulation(year, boro);
+        if (!pop) return 0;
+        return Math.round((raw / pop) * 100000 * 10) / 10;
+      }
     });
   }
   document.getElementById("monthly-sub").textContent=`${crimeLabel} · ${primaryYear} vs ${cmpYear} · Q1–${primaryQ}${fullGeoLabel}`;
