@@ -51,6 +51,9 @@ CRIME_GROUPS <- list(
   )
 )
 
+# Law category groups — computed separately from law_cat_cd
+LAW_CAT_GROUPS <- c("All felonies", "All misdemeanors", "All violations")
+
 BOROUGH_MAP <- c(
   "PATROL BORO BRONX"         = "Bronx",
   "PATROL BORO BKLYN NORTH"   = "Brooklyn",
@@ -255,6 +258,32 @@ all_crime_combined <- rbind(
 )
 all_crime_combined$ofns_desc <- "All crime"
 agg <- rbind(agg, all_crime_combined[, names(agg)])
+
+# ── Law category groups (felony/misdemeanor/violation) ────────────────────────
+cat("  Building law category groups...\n")
+law_cat_agg <- list()
+for (lcat in c("FELONY", "MISDEMEANOR", "VIOLATION")) {
+  label <- switch(lcat,
+    "FELONY"      = "All felonies",
+    "MISDEMEANOR" = "All misdemeanors",
+    "VIOLATION"   = "All violations"
+  )
+  sub_law <- all_rows[!is.na(all_rows$law_cat_cd) & toupper(trimws(all_rows$law_cat_cd)) == lcat, ]
+  if (nrow(sub_law) == 0) { cat(sprintf("    %s: no rows\n", label)); next }
+  sub_law$borough <- BOROUGH_MAP[sub_law$patrol_boro]
+  sub_law$borough[is.na(sub_law$borough)] <- "Other"
+  a_boro <- aggregate(n ~ bucket + borough + yr + quarter,
+    data = sub_law[sub_law$borough != "Other", ], FUN = sum)
+  a_all  <- aggregate(n ~ bucket + yr + quarter, data = sub_law, FUN = sum)
+  a_all$borough <- "All boroughs"
+  combined <- rbind(a_boro, a_all[, names(a_boro)])
+  combined$ofns_desc <- label
+  law_cat_agg[[label]] <- combined[, names(agg)]
+  cat(sprintf("    %s: %d rows\n", label, nrow(combined)))
+}
+if (length(law_cat_agg) > 0) {
+  agg <- rbind(agg, do.call(rbind, law_cat_agg))
+}
 
 # Add other crime groups
 group_rows <- list()
@@ -576,7 +605,7 @@ output <- list(
   ),
   crime_types        = all_crime_types,
   crime_types_major  = major_in_list,
-  crime_groups       = c("All crime", names(CRIME_GROUPS)),
+  crime_groups       = c("All crime", names(CRIME_GROUPS), LAW_CAT_GROUPS),
   subway_ridership   = subway_ridership,
   population         = NYC_POP,
   data               = data_out,

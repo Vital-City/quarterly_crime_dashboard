@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_75.html -->
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_76.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1597,6 +1597,12 @@ function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplet
 
   function paint(hovIdx) {
     ctx.clearRect(0,0,W,H);
+    // Clipping region — lines stay within chart area
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(PL, PT, cW, cH);
+    ctx.clip();
+    ctx.restore();
     // Grid + y labels
     for(let i=0;i<=TICKS;i++){
       const v=niceMin+(niceMax-niceMin)/TICKS*i;
@@ -1614,6 +1620,12 @@ function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplet
       ctx.beginPath(); ctx.moveTo(px(hovIdx),PT); ctx.lineTo(px(hovIdx),PT+cH); ctx.stroke();
       ctx.setLineDash([]);
     }
+    // Clip to chart area so lines don't overflow
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(PL-1, PT, cW+2, cH+1);
+    ctx.clip();
+
     // Solid segment of line (complete data)
     ctx.beginPath(); ctx.strokeStyle=C_TREND; ctx.lineWidth=2;
     let started=false;
@@ -1658,6 +1670,9 @@ function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplet
         ctx.textAlign="center"; ctx.fillText(lbl,px(i),py(v)-10);
       }
     });
+    // Restore clip
+    ctx.restore();
+
     // X labels
     ctx.fillStyle=C_LABEL; ctx.font="10px -apple-system,sans-serif";
     if(xOverride){
