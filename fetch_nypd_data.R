@@ -122,12 +122,12 @@ build_soql <- function(year, ytd_month_end) {
   sprintf(
     "SELECT date_extract_y(rpt_dt) AS yr, %s AS quarter,
             date_extract_m(rpt_dt) AS month,
-            ofns_desc, patrol_boro, addr_pct_cd, %s AS loc_type, COUNT(*) AS n
+            ofns_desc, law_cat_cd, patrol_boro, addr_pct_cd, %s AS loc_type, COUNT(*) AS n
      WHERE  rpt_dt >= '%d-01-01T00:00:00'
        AND  rpt_dt <  '%d-01-01T00:00:00'
        AND  date_extract_m(rpt_dt) <= %d
        AND  ofns_desc IS NOT NULL
-     GROUP BY yr, quarter, month, ofns_desc, patrol_boro, addr_pct_cd, loc_type",
+     GROUP BY yr, quarter, month, ofns_desc, law_cat_cd, patrol_boro, addr_pct_cd, loc_type",
     q_expr, loc_expr,
     year, year + 1, ytd_month_end
   )
@@ -197,6 +197,7 @@ all_rows$yr          <- as.character(as.integer(as.numeric(all_rows$yr)))
 all_rows$n           <- as.integer(as.numeric(all_rows$n))
 all_rows$precinct    <- as.integer(as.numeric(as.character(all_rows$addr_pct_cd)))
 all_rows$month       <- as.integer(as.numeric(as.character(all_rows$month)))
+all_rows$law_cat_cd  <- toupper(trimws(as.character(all_rows$law_cat_cd)))
 
 all_rows <- all_rows[
   !is.na(all_rows$ofns_desc) & all_rows$ofns_desc != "" &
@@ -268,10 +269,9 @@ for (lcat in c("FELONY", "MISDEMEANOR", "VIOLATION")) {
     "MISDEMEANOR" = "All misdemeanors",
     "VIOLATION"   = "All violations"
   )
-  sub_law <- all_rows[!is.na(all_rows$law_cat_cd) & toupper(trimws(all_rows$law_cat_cd)) == lcat, ]
+  # Use expanded which already has bucket and borough columns
+  sub_law <- expanded[!is.na(expanded$law_cat_cd) & toupper(trimws(expanded$law_cat_cd)) == lcat, ]
   if (nrow(sub_law) == 0) { cat(sprintf("    %s: no rows\n", label)); next }
-  sub_law$borough <- BOROUGH_MAP[sub_law$patrol_boro]
-  sub_law$borough[is.na(sub_law$borough)] <- "Other"
   a_boro <- aggregate(n ~ bucket + borough + yr + quarter,
     data = sub_law[sub_law$borough != "Other", ], FUN = sum)
   a_all  <- aggregate(n ~ bucket + yr + quarter, data = sub_law, FUN = sum)

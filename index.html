@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_76.html -->
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_78.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1578,15 +1578,15 @@ function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplet
   const validData=data.filter(v=>v>0);
   const mx=Math.max(...(validData.length?validData:[1]));
   const mn=Math.min(...(validData.length?validData:[0]));
-  // Dynamic y-axis: start below min so small variations are visible
+  const hasZeros = data.some(v=>v===0);
+  // If any zeros exist, always start at 0 to avoid lines going off chart
   const range = mx - mn;
   const padTop = range > 0 ? range * 0.25 : mx * 0.15;
-  const padBot = range > 0 ? range * 0.15 : 0;
-  const rawMin = Math.max(0, mn - padBot);
+  const padBot = (!hasZeros && range > 0) ? range * 0.15 : 0;
+  const rawMin = hasZeros ? 0 : Math.max(0, mn - padBot);
   const rawMax = mx + padTop;
-  // Round to nice numbers
   const magnitude = Math.pow(10, Math.floor(Math.log10(rawMax - rawMin || 1)));
-  const niceMin = Math.floor(rawMin / magnitude) * magnitude;
+  const niceMin = hasZeros ? 0 : Math.floor(rawMin / magnitude) * magnitude;
   const niceMax = Math.ceil(rawMax / magnitude) * magnitude || 1;
   const TICKS=4;
   const n=labels.length;
