@@ -45,9 +45,8 @@ CRIME_GROUPS <- list(
     "BURGLARY", "GRAND LARCENY", "GRAND LARCENY OF MOTOR VEHICLE"
   ),
   "All assaults" = c(
-    "FELONY ASSAULT", "ASSAULT 3 & RELATED OFFENSES",
-    "HARRASSMENT 2", "HARASSMENT 2",
-    "MENACING,RECKLESS ENDANGERMENT", "OFFENSES AGAINST THE PERSON"
+    "FELONY ASSAULT",
+    "ASSAULT 3 & RELATED OFFENSES"
   )
 )
 
@@ -321,6 +320,16 @@ build_pct_data <- function(rows_subset) {
     g_p$ofns_desc <- gname
     group_rows[[gname]] <- g_p[, c("ofns_desc","pct_key","yr","quarter","n")]
   }
+  # Law category groups
+  for (lcat in c("FELONY", "MISDEMEANOR", "VIOLATION")) {
+    label <- switch(lcat, "FELONY"="All felonies", "MISDEMEANOR"="All misdemeanors", "VIOLATION"="All violations")
+    sub_lc <- rows_subset[!is.na(rows_subset$law_cat_cd) & toupper(trimws(rows_subset$law_cat_cd)) == lcat, ]
+    if (nrow(sub_lc) == 0) next
+    sub_lc$pct_key <- paste0("pct_", sub_lc$precinct)
+    lc_agg <- aggregate(n ~ pct_key + yr + quarter, data = sub_lc, FUN = sum)
+    lc_agg$ofns_desc <- label
+    group_rows[[label]] <- lc_agg[, c("ofns_desc","pct_key","yr","quarter","n")]
+  }
   all_c <- aggregate(n ~ pct_key + yr + quarter, data = agg, FUN = sum)
   all_c$ofns_desc <- "All crime"
 
@@ -534,6 +543,19 @@ agg_monthly <- rbind(agg_monthly,
   all_crime_monthly_combined[, names(agg_monthly)]
 )
 
+# Add law category monthly groups
+for (lcat in c("FELONY", "MISDEMEANOR", "VIOLATION")) {
+  label <- switch(lcat, "FELONY"="All felonies", "MISDEMEANOR"="All misdemeanors", "VIOLATION"="All violations")
+  sub_lm <- expanded[!is.na(expanded$law_cat_cd) & toupper(trimws(expanded$law_cat_cd)) == lcat & !is.na(expanded$month), ]
+  if (nrow(sub_lm) == 0) next
+  lm_boro <- aggregate(n ~ bucket + borough + yr + month, data=sub_lm[sub_lm$borough!="Other",], FUN=sum)
+  lm_all  <- aggregate(n ~ bucket + yr + month, data=sub_lm, FUN=sum)
+  lm_all$borough <- "All boroughs"
+  lm_combined <- rbind(lm_boro, lm_all[, names(lm_boro)])
+  lm_combined$ofns_desc <- label
+  agg_monthly <- rbind(agg_monthly, lm_combined[, names(agg_monthly)])
+}
+
 # Build nested: monthly_data_out[[crime]][[loc]][[boro]][[year]][[month]] = n
 monthly_data_out <- list()
 for (i in seq_len(nrow(agg_monthly))) {
@@ -564,6 +586,15 @@ build_pct_monthly_slice <- function(rows_subset) {
     g_m <- aggregate(n ~ pct_key + yr + month, data = sub_m, FUN = sum)
     g_m$ofns_desc <- gname
     group_rows[[gname]] <- g_m[, names(agg)]
+  }
+  # Law category groups
+  for (lcat in c("FELONY", "MISDEMEANOR", "VIOLATION")) {
+    label <- switch(lcat, "FELONY"="All felonies", "MISDEMEANOR"="All misdemeanors", "VIOLATION"="All violations")
+    sub_lc <- rows_subset[!is.na(rows_subset$law_cat_cd) & toupper(trimws(rows_subset$law_cat_cd)) == lcat, ]
+    if (nrow(sub_lc) == 0) next
+    lc_agg <- aggregate(n ~ pct_key + yr + month, data = sub_lc, FUN = sum)
+    lc_agg$ofns_desc <- label
+    group_rows[[label]] <- lc_agg[, names(agg)]
   }
   all_c <- aggregate(n ~ pct_key + yr + month, data = rows_subset, FUN = sum)
   all_c$ofns_desc <- "All crime"
