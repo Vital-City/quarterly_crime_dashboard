@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_89.html -->
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_90.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2176,23 +2176,28 @@ function renderMap(crimeLabel, curQ, latestYear) {
         const swatchCol = mapMetric === "level" ? "#ff7c53"
           : mainLine.startsWith("▲") || mainLine.startsWith("+") ? "#d2232a" : "#57aa4a";
         tt.innerHTML = `
-          <div style="font-weight:700;font-size:13px;color:#050507;margin-bottom:2px;">${pctLabel(pct)}</div>
+          <div style="font-weight:700;font-size:13px;color:#050507;margin-bottom:6px;">${pctLabel(pct)}</div>
           <hr style="border:none;border-top:1px solid #ebebeb;margin:6px 0;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
             <span style="display:inline-block;width:12px;height:12px;background:${swatchCol};flex-shrink:0;"></span>
             <span style="font-weight:700;color:${col};">${mainLine}</span>
           </div>
-          <div style="color:#707175;font-size:11px;">
-            ${primaryYear}: <strong style="color:#050507;">${curDisp}</strong>
-            &nbsp;·&nbsp; ${cmpYear}: <strong style="color:#050507;">${prvDisp}</strong>
+          <div style="color:#707175;font-size:11px;line-height:1.8;">
+            <div>${primaryYear}: <strong style="color:#050507;">${curDisp}</strong></div>
+            <div>${cmpYear}: <strong style="color:#050507;">${prvDisp}</strong></div>
           </div>`;
         tt.classList.add("visible");
-        // Position tooltip
-        const ttW = tt.offsetWidth || 200;
-        const ttH = tt.offsetHeight || 80;
-        let left = mx + 14, top = my - ttH/2;
-        if (left + ttW > W - 8) left = mx - ttW - 14;
-        if (top < 4) top = 4;
+        // Position using viewport coords (tooltip is position:fixed)
+        const rect = canvas.getBoundingClientRect();
+        const vx = rect.left + mx;
+        const vy = rect.top  + my;
+        const ttW = tt.offsetWidth || 220;
+        const ttH = tt.offsetHeight || 100;
+        const vw = window.innerWidth, vh = window.innerHeight;
+        let left = vx + 16, top = vy - ttH/2;
+        if (left + ttW > vw - 8) left = vx - ttW - 16;
+        if (top < 8) top = 8;
+        if (top + ttH > vh - 8) top = vh - ttH - 8;
         if (top + ttH > H - 4) top = H - ttH - 4;
         tt.style.left = left + "px";
         tt.style.top = top + "px";
