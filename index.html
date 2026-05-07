@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_86.html -->
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_87.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -57,8 +57,8 @@ body {
 
 /* ── Masthead ── */
 .data-bar {
-  background: var(--black);
-  padding: 0.75rem 2.5rem;
+  background: var(--white);
+  padding: 0.75rem 0;
   display: flex;
   align-items: center;
 }
@@ -99,13 +99,13 @@ body {
 }
 .mast-badge {
   font-family: var(--font-primary);
-  font-weight: 700; /* halyard-text bold kicker */
+  font-weight: 700;
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.6);
-  border: 1px solid rgba(255,255,255,0.2);
-  padding: 6px 12px;
+  color: var(--charcoal);
+  border: 1px solid var(--border);
+  padding: 5px 10px;
   white-space: nowrap;
   display: inline-block;
 }
@@ -519,10 +519,11 @@ select.year-select:focus { outline: 2px solid var(--orange); }
   .metrics { grid-template-columns: repeat(2, 1fr); }
   .two-col, .two-col-equal { grid-template-columns: 1fr; gap: 2rem; }
   .data-bar {
-  background: var(--black);
-  padding: 0.75rem 2.5rem;
+  background: var(--white);
+  padding: 0.75rem 0;
   display: flex;
   align-items: center;
+  border-bottom: 1px solid var(--border);
 }
 
 .masthead { padding: 1.25rem; }
@@ -973,7 +974,7 @@ function buildApp() {
           <div class="legend" id="map-legend" style="align-self:center;"></div>
         </div>
       </div>
-      <div id="map-container" style="width:100%;height:clamp(480px,75vw,820px);position:relative;">
+      <div id="map-container" style="width:100%;height:clamp(420px,55vw,680px);position:relative;">
         <div id="map-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text2);">Loading map…</div>
         <canvas id="map-canvas" style="width:100%;height:100%;display:block;"></canvas>
         <div id="map-tooltip" class="tooltip"></div>
@@ -1572,14 +1573,17 @@ function drawBars(id, labels, datasets, ttId) {
           const arrow = pct > 0 ? "▲" : pct < 0 ? "▼" : "▬";
           const col = pct > 0 ? "#c0392b" : pct < 0 ? "#2d8a3e" : "#707175";
           const cmpLbl = datasets[0].label || "prior year";
-          pctLine = `<span style="color:${col};font-weight:700;">${arrow} ${sign}${pct.toFixed(1)}% vs ${cmpLbl}</span>`;
+          pctLine = `<div style="color:${col};font-weight:700;font-size:12px;">${arrow} ${sign}${pct.toFixed(1)}% vs ${cmpLbl}</div>`;
         }
       }
-      const lines = [`<strong>${labels[i]}</strong>`,
-        ...datasets.map(d => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.color};margin-right:5px;"></span>${d.label}: ${d.data[i].toLocaleString()}`),
-        ...(pctLine ? [pctLine] : [])
+      // Build white-card style tooltip
+      const ttLines = [
+        `<strong>${labels[i]}</strong>`,
+        `<hr style="border:none;border-top:1px solid #ebebeb;margin:5px 0;">`,
+        ...datasets.map(d => `<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;"><span style="display:inline-block;width:10px;height:10px;background:${d.color};flex-shrink:0;"></span><span style="color:#707175;">${d.label}:</span> <strong>${d.data[i].toLocaleString()}</strong></div>`),
+        ...(pctLine ? [`<hr style="border:none;border-top:1px solid #ebebeb;margin:5px 0;">${pctLine}`] : [])
       ];
-      showTooltip(ttId, canvas, mx, my, lines);
+      showTooltip(ttId, canvas, mx, my, ttLines);
     } else {
       paint(-1); hideTooltip(ttId);
     }
@@ -1760,8 +1764,10 @@ function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplet
       const note=isPartial?" (incomplete)":"";
       // Quarterly labels are already "2024 Q1" — show as header, annual/YTD show year
       showTooltip(ttId,canvas,mx,e.clientY-canvas.getBoundingClientRect().top,[
-        `<strong style="color:${col}">${lbl}${note}</strong>`,
-        `${data[i].toLocaleString()} complaints`
+        `<strong>${lbl}${note}</strong>`,
+        `<hr style="border:none;border-top:1px solid #ebebeb;margin:5px 0;">`,
+        `<div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:10px;height:10px;background:${col};flex-shrink:0;"></span><strong style="font-size:14px;">${data[i].toLocaleString()}</strong></div>`,
+        `<div style="color:#707175;font-size:11px;margin-top:2px;">${isRate?"per million rides":"complaints"}</div>`
       ]);
     } else { paint(-1); hideTooltip(ttId); }
   };
@@ -2159,9 +2165,20 @@ function renderMap(crimeLabel, curQ, latestYear) {
           mainLine = pctVal == null ? "—"
             : (pctVal > 0 ? "▲ +" : "▼ ") + pctVal.toFixed(1) + `% vs ${cmpYear}`;
         }
-        tt.innerHTML = `<strong>${pctLabel(pct)}</strong><br>
-          <span style="color:${col};font-weight:700;">${mainLine}</span><br>
-          ${primaryYear}: ${curDisp} &nbsp;·&nbsp; ${cmpYear}: ${prvDisp}`;
+        // Color swatch
+        const swatchCol = mapMetric === "level" ? "#ff7c53"
+          : mainLine.startsWith("▲") || mainLine.startsWith("+") ? "#d2232a" : "#57aa4a";
+        tt.innerHTML = `
+          <div style="font-weight:700;font-size:13px;color:#050507;margin-bottom:2px;">${pctLabel(pct)}</div>
+          <hr style="border:none;border-top:1px solid #ebebeb;margin:6px 0;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="display:inline-block;width:12px;height:12px;background:${swatchCol};flex-shrink:0;"></span>
+            <span style="font-weight:700;color:${col};">${mainLine}</span>
+          </div>
+          <div style="color:#707175;font-size:11px;">
+            ${primaryYear}: <strong style="color:#050507;">${curDisp}</strong>
+            &nbsp;·&nbsp; ${cmpYear}: <strong style="color:#050507;">${prvDisp}</strong>
+          </div>`;
         tt.classList.add("visible");
         // Position tooltip
         const ttW = tt.offsetWidth || 200;
