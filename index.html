@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_91.html -->
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_92.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2272,6 +2272,17 @@ async function boot() {
   render();
 }
 boot();
+</script>
+<script>
+  (function() {
+    function sendHeight() {
+      const height = document.documentElement.scrollHeight;
+      parent.postMessage({ type: 'vc-qcd-resize', height }, '*');
+    }
+
+    window.addEventListener('load', sendHeight);
+    new ResizeObserver(sendHeight).observe(document.body);
+  })();
 </script>
 
 
