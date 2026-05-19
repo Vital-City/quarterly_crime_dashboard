@@ -226,8 +226,10 @@ MAJOR_SEVEN <- c(
   "GRAND LARCENY", "GRAND LARCENY OF MOTOR VEHICLE"
 )
 
-# Sorted dropdown: major 7 first, then rest alphabetically
-major_in_list  <- sort(intersect(MAJOR_SEVEN, all_crime_types))
+# Get all majors that exist in the raw data (regardless of threshold)
+majors_in_data <- intersect(MAJOR_SEVEN, unique(all_rows$ofns_desc))
+# Sorted dropdown: major 7 first (always included), then rest alphabetically
+major_in_list  <- sort(majors_in_data)
 others_in_list <- sort(setdiff(all_crime_types, MAJOR_SEVEN))
 all_crime_types_ordered <- c(major_in_list, others_in_list)
 

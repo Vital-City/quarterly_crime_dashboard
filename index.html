@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_96.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NYC Quarterly Complaints Dashboard — Vital City</title>
-<link rel="stylesheet" href="https://use.typekit.net/nlh6iak.css">
+<link rel="stylesheet" href="./index_files/nlh6iak.css">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -562,11 +562,11 @@ select.year-select:focus { outline: 2px solid var(--orange); }
 </div>
 
 <div class="page" id="app" style="padding-top:1.5rem;">
-    <div class="state-screen">
-    <h2>Loading data…</h2>
-    <p>Reading <code>crime_data.json</code></p>
-  </div>
-</div>
+      <div class="state-screen">
+        <h2>Data file not found</h2>
+        <p>Place <code>crime_data.json</code> in the same folder as this HTML file, then reload.<br><br>
+        Generate it in RStudio with: <code>source("fetch_nypd_data.R")</code></p>
+      </div></div>
 
 <script>
 // ── Precinct → neighborhood names ────────────────────────────────────────────
@@ -1405,7 +1405,7 @@ function render() {
       : rawData;
     const subLabel = isRate ? ` · ${rateLabel(loc)}` : "";
     document.getElementById("trend-sub").textContent=`${crimeLabel} · YTD through ${curQ} each year · ${minYr}–${maxYr}${subLabel}${fullGeoLabel}`;
-    drawLine("chart-trend", allYrs.map(String), tData, primaryYear, cmpYear, "tt-trend", null, isRate);
+    drawLine("chart-trend", allYrs.map(String), tData, primaryYear, cmpYear, "tt-trend", null, null, isRate);
 
   } else if(trendMode==="quarterly"){
     const qLabels=[], qData=[];
@@ -1438,7 +1438,7 @@ function render() {
     });
     const subLabel = isRate ? ` · ${rateLabel(loc)}` : "";
     document.getElementById("trend-sub").textContent=`${crimeLabel} · Each quarter · ${minYr}–${maxYr}${subLabel}${fullGeoLabel}`;
-    drawLine("chart-trend", qLabels, qData, null, null, "tt-trend", xLabels, isRate);
+    drawLine("chart-trend", qLabels, qData, null, null, "tt-trend", xLabels, null, isRate);
 
   } else { // annual
     const isFullYear = y => !(y===latestYear && curQ!=="Q4");
@@ -1775,7 +1775,7 @@ function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplet
       showTooltip(ttId,canvas,mx,e.clientY-canvas.getBoundingClientRect().top,[
         `<strong>${lbl}${note}</strong>`,
         `<hr style="border:none;border-top:1px solid #ebebeb;margin:5px 0;">`,
-        `<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;"><span style="display:inline-block;width:10px;height:10px;background:${col};flex-shrink:0;"></span><span style="font-size:14px;font-weight:700;">${data[i].toLocaleString()}</span></div>`,
+        `<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;"><span style="display:inline-block;width:10px;height:10px;background:${col};flex-shrink:0;"></span><span style="font-size:14px;font-weight:700;">${rateMode ? data[i].toFixed(1) : Math.round(data[i]).toLocaleString()}</span></div>`,
         `<div style="color:#707175;font-size:11px;">${rateMode?"per million rides":"complaints"}</div>`
       ]);
     } else { paint(-1); hideTooltip(ttId); }
@@ -2284,5 +2284,7 @@ boot();
     new ResizeObserver(sendHeight).observe(document.body);
   })();
 </script>
-</body>
-</html>
+
+
+
+</body></html>
