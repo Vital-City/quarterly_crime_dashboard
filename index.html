@@ -633,6 +633,10 @@ select.year-select:focus { outline: 2px solid var(--orange); }
     .chart-section .toggle-group, .movers-section .toggle-group { flex-wrap: wrap !important; }
     #map-controls { align-items: flex-start !important; }
   }
+
+  /* ---- Meta strip fix: blend into warm canvas, quiet inline label ---- */
+  .data-bar { background:#f4f2ee !important; padding:1.25rem 0 0.25rem !important; border-bottom:none !important; }
+  .mast-badge { background:transparent !important; border:none !important; border-radius:0 !important; padding:0 !important; color:#8b8c90 !important; font-size:10px !important; letter-spacing:0.12em !important; }
 </style>
 </head>
 <body>
@@ -1529,9 +1533,17 @@ function render() {
       ? rawAnnual.map((v,i)=>{ const r=toRate(v,loc,boro,allYrs[i],null,"Q4"); return r==null?0:r; })
       : rawAnnual;
     const incomplete=allYrs.map(y=>!isFullYear(y));
+    // Vital City: in ANNUAL mode, drop a trailing incomplete year entirely
+    // (don't render the dashed partial-year segment — it reads poorly and the year isn't done).
+    let annYrs = allYrs, annData = aData, annIncomplete = incomplete;
+    if (annIncomplete.length && annIncomplete[annIncomplete.length-1]) {
+      annYrs = allYrs.slice(0, -1);
+      annData = aData.slice(0, -1);
+      annIncomplete = incomplete.slice(0, -1);
+    }
     const subLabel = isRate ? ` · ${rateLabel(loc)}` : "";
-    document.getElementById("trend-sub").textContent=`${crimeLabel} · Full year totals · ${minYr}–${maxYr}${curQ!=="Q4"?" ("+latestYear+" incomplete)":""}${subLabel}${fullGeoLabel}`;
-    drawLine("chart-trend", allYrs.map(String), aData, primaryYear, cmpYear, "tt-trend", null, incomplete, isRate);
+    document.getElementById("trend-sub").textContent=`${crimeLabel} · Full year totals · ${minYr}–${annYrs[annYrs.length-1]||maxYr}${subLabel}${fullGeoLabel}`;
+    drawLine("chart-trend", annYrs.map(String), annData, primaryYear, cmpYear, "tt-trend", null, annIncomplete, isRate);
   }
   // Top movers
   renderMovers(crime, loc, boro, primaryYear, cmpYear, primaryQ, inPctMode, pct);
