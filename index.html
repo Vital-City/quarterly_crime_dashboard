@@ -637,6 +637,85 @@ select.year-select:focus { outline: 2px solid var(--orange); }
   /* ---- Meta strip fix: blend into warm canvas, quiet inline label ---- */
   .data-bar { background:#f4f2ee !important; padding:1.25rem 0 0.25rem !important; border-bottom:none !important; }
   .mast-badge { background:transparent !important; border:none !important; border-radius:0 !important; padding:0 !important; color:#8b8c90 !important; font-size:10px !important; letter-spacing:0.12em !important; }
+
+
+  /* ================================================================
+     MOBILE REFINEMENTS (tap targets + line-chart controls reflow)
+     ================================================================ */
+@media (max-width: 600px) {
+  /* Badge: wrap, no overflow */
+  .data-bar { padding: 1rem 0 0.25rem !important; }
+  .mast-badge { white-space: normal !important; line-height: 1.5 !important; display: block !important; max-width: 100% !important; }
+
+  /* Bigger, consistent tap targets */
+  select, select.year-select { height: 46px !important; font-size: 16px !important; }
+  .toggle-group { height: auto !important; }
+  .toggle-group button { min-height: 44px !important; font-size: 12px !important; padding: 0 10px !important; }
+
+  #subway-rate-toggle, #boro-rate-toggle, #map-metric-toggle,
+  #map-view-toggle, #map-period-toggle, #movers-mode-toggle,
+  #trend-toggle, #trend-window-toggle { height: auto !important; }
+  #subway-rate-toggle button, #boro-rate-toggle button,
+  #map-metric-toggle button, #map-view-toggle button,
+  #map-period-toggle button, #movers-mode-toggle button { min-height: 40px !important; font-size: 12px !important; }
+
+  /* Line chart controls reflow */
+  #trend-toggle { width: 100% !important; }
+  #trend-toggle button { flex: 1 !important; }
+  #trend-window-toggle {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    width: 100% !important;
+    border: 1px solid #d9d5cc !important;
+    border-radius: 7px !important;
+    overflow: hidden !important;
+  }
+  #trend-window-toggle button {
+    flex: none !important;
+    min-height: 44px !important;
+    font-size: 11px !important;
+    border-right: 1px solid #e6e2da !important;
+    border-bottom: 1px solid #e6e2da !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+  }
+
+  #chart-trend, #chart-qtr { height: 220px !important; }
+  #chart-monthly { height: 240px !important; }
+  .year-ctrl-inner { flex-wrap: wrap !important; row-gap: 10px !important; }
+  #map-controls { align-items: flex-start !important; }
+}
+
+
+  /* ================================================================
+     WHITE THEME + CONTROL/OUTPUT DISTINCTION
+     Pure white bg + white data cards (black outline); filter &
+     year controls sit on a light-grey panel to read as the input zone.
+     ================================================================ */
+
+  /* TRUE WHITE everywhere */
+  html, body, .data-bar { background: #ffffff !important; }
+
+  /* Output/data cards: pure white, black outline, no shadow */
+  .two-col-equal > .chart-section, .two-col > .chart-section,
+  .movers-section, #app > .chart-section, .methodology {
+    background: #ffffff !important;
+    border: 1.5px solid #050507 !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+  }
+  .metric { background:#ffffff !important; border:1.5px solid #050507 !important; border-radius:8px !important; box-shadow:none !important; }
+  .metric.ytd-metric { background:#050507 !important; border:1.5px solid #050507 !important; }
+
+  /* CONTROLS distinguished: light neutral panel */
+  .controls, .year-controls {
+    background: #f5f5f4 !important;
+    border: 1px solid #e3e3e1 !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+  }
+  select, select.year-select { background-color: #ffffff !important; border:1px solid #cfcfcd !important; }
+
 </style>
 </head>
 <body>
