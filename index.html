@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- saved from url=(0046)file:///C:/Users/paulr/Downloads/index_96.html -->
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html lang="en">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NYC Quarterly Complaints Dashboard — Vital City</title>
-<link rel="stylesheet" href="./index_files/nlh6iak.css">
+<link rel="stylesheet" href="https://use.typekit.net/nlh6iak.css">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -551,171 +551,6 @@ select.year-select:focus { outline: 2px solid var(--orange); }
 .tooltip.visible { opacity: 1; }
 .tooltip strong { font-weight: 700; font-size: 12px; color: #050507; display: block; margin-bottom: 5px; }
 .tooltip hr { border: none; border-top: 1px solid #ebebeb; margin: 5px 0; }
-
-
-  /* ================================================================
-     VITAL CITY REDESIGN LAYER  (appended — overrides base styles above)
-     Card-based layout, warm canvas, hero KPI, serif titles,
-     responsive breakpoints, contrast + focus-visible fixes.
-     ================================================================ */
-  html, body { background: rgb(244, 242, 238) !important; }
-  body { color: var(--text); }
-  .page { max-width: 1240px !important; padding: 2rem 2rem 5rem !important; }
-  .controls { background: rgb(255, 255, 255) !important; border: 1px solid rgb(230, 226, 218) !important; border-radius: 10px !important; box-shadow: rgba(5, 5, 7, 0.04) 0px 1px 2px, rgba(5, 5, 7, 0.12) 0px 8px 24px -12px !important; padding: 1.4rem 1.5rem !important; margin-bottom: 1.25rem !important; gap: 1.75rem !important; }
-  .ctrl label { color: rgb(139, 140, 144) !important; font-size: 9px !important; letter-spacing: 0.14em !important; margin-bottom: 7px !important; }
-  select, select.year-select { border: 1px solid rgb(217, 213, 204) !important; border-radius: 7px !important; background-color: rgb(251, 250, 248) !important; box-shadow: none !important; transition: border-color 0.14s, box-shadow 0.14s, background 0.14s !important; }
-  select:hover, select.year-select:hover { border-color: var(--black) !important; background-color: rgb(255, 255, 255) !important; }
-  select:focus, select.year-select:focus { outline: none !important; border-color: var(--orange) !important; box-shadow: rgba(255, 124, 83, 0.18) 0px 0px 0px 3px !important; }
-  .toggle-group { border: 1px solid rgb(217, 213, 204) !important; border-radius: 7px !important; overflow: hidden !important; background: rgb(251, 250, 248) !important; }
-  .toggle-group button { border-right-color: rgb(230, 226, 218) !important; transition: background 0.16s, color 0.16s !important; }
-  .toggle-group button.active { background: var(--black) !important; color: rgb(255, 255, 255) !important; }
-  .year-controls { background: rgb(255, 255, 255) !important; border: 1px solid rgb(230, 226, 218) !important; border-radius: 10px !important; box-shadow: rgba(5, 5, 7, 0.04) 0px 1px 2px !important; padding: 0.9rem 1.5rem !important; margin-bottom: 1.75rem !important; }
-  select.year-select { background-color: rgb(251, 250, 248) !important; }
-  .metrics { display: grid !important; grid-template-columns: 1.7fr repeat(4, 1fr) !important; gap: 14px !important; border-width: medium !important; border-style: none !important; border-color: currentcolor !important; border-image: none !important; background: transparent !important; margin-bottom: 2.75rem !important; }
-  .metric { background: rgb(255, 255, 255) !important; border: 1px solid rgb(230, 226, 218) !important; border-radius: 10px !important; padding: 1.3rem 1.35rem !important; box-shadow: rgba(5, 5, 7, 0.04) 0px 1px 2px !important; position: relative !important; }
-  .metric.ytd-metric { background: linear-gradient(160deg, rgb(13, 13, 18) 0%, rgb(5, 5, 7) 100%) !important; border-width: medium !important; border-style: none !important; border-color: currentcolor !important; border-image: none !important; padding-left: 1.5rem !important; box-shadow: rgba(5, 5, 7, 0.45) 0px 10px 30px -10px !important; overflow: hidden !important; }
-  .metric.ytd-metric::before { left: 0px; top: 0px; bottom: 0px; content: "" !important; position: absolute !important; width: 5px !important; background: var(--chartreuse) !important; }
-  .ytd-metric .m-label { color: rgb(185, 186, 192) !important; letter-spacing: 0.16em !important; }
-  .ytd-metric .m-val { color: rgb(255, 255, 255) !important; font-size: 52px !important; letter-spacing: -0.03em !important; }
-  .ytd-metric .m-delta { font-size: 12px !important; }
-  .m-label { font-size: 9px !important; letter-spacing: 0.13em !important; color: rgb(139, 140, 144) !important; }
-  .m-val { font-size: 33px !important; letter-spacing: -0.025em !important; font-feature-settings: "tnum" !important; }
-  .m-delta { font-weight: 700 !important; }
-  .two-col-equal > .chart-section, .two-col > .chart-section, .movers-section, #app > .chart-section { background: rgb(255, 255, 255) !important; border: 1px solid rgb(230, 226, 218) !important; border-radius: 12px !important; box-shadow: rgba(5, 5, 7, 0.04) 0px 1px 2px, rgba(5, 5, 7, 0.14) 0px 10px 30px -18px !important; padding: 1.6rem 1.7rem !important; margin-bottom: 0px !important; }
-  .two-col-equal, .two-col { gap: 1.5rem !important; margin-bottom: 1.5rem !important; }
-  .movers-section { margin-bottom: 1.5rem !important; }
-  .chart-rule { width: 34px !important; height: 3px !important; border-radius: 2px !important; margin-bottom: 14px !important; }
-  .chart-title { font-family: var(--font-serif) !important; font-weight: 400 !important; font-size: 22px !important; letter-spacing: -0.01em !important; color: rgb(22, 23, 26) !important; margin-bottom: 5px !important; }
-  .chart-sub { font-size: 12px !important; color: rgb(139, 140, 144) !important; margin-bottom: 1.15rem !important; }
-  .boro-bar-bg { height: 14px !important; background: rgb(240, 237, 231) !important; border-radius: 7px !important; overflow: hidden !important; }
-  .boro-bar-fill { border-radius: 7px !important; transition: width 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) !important; }
-  .movers-grid { gap: 2.5rem !important; }
-  .mover-row { padding: 10px !important; border-radius: 6px !important; transition: background 0.12s !important; border-bottom: 1px solid rgb(240, 237, 231) !important; }
-  .mover-row:hover { background: rgb(250, 248, 244) !important; }
-  .mover-name { font-size: 13px !important; }
-  .movers-col-title { font-size: 10px !important; letter-spacing: 0.13em !important; }
-  .tooltip, #map-tooltip { border-radius: 10px !important; border-color: rgba(5, 5, 7, 0.06) !important; box-shadow: rgba(5, 5, 7, 0.18) 0px 12px 32px !important; padding: 12px 15px !important; }
-  .mast-badge { background: rgb(255, 255, 255) !important; border: 1px solid rgb(230, 226, 218) !important; border-radius: 999px !important; padding: 6px 14px !important; box-shadow: rgba(5, 5, 7, 0.04) 0px 1px 2px !important; }
-  .methodology { background: rgb(255, 255, 255) !important; border: 1px solid rgb(230, 226, 218) !important; border-radius: 12px !important; padding: 1.75rem !important; margin-top: 1.5rem !important; }
-  .meth-title { color: var(--orange) !important; letter-spacing: 0.13em !important; }
-  .meth-body p { line-height: 1.75 !important; color: rgb(85, 86, 90) !important; }
-  .source { border-top: 1px solid rgb(230, 226, 218) !important; }
-  .ctrl label, .m-label, .movers-col-title, .meth-title { color: rgb(107, 108, 112) !important; }
-  .chart-sub, .mover-counts { color: rgb(111, 112, 116) !important; }
-  .meth-body p { color: rgb(70, 71, 75) !important; }
-  .ytd-metric .m-delta.delta-down { color: rgb(126, 211, 107) !important; }
-  .ytd-metric .m-label { color: rgb(207, 208, 212) !important; }
-  select:focus-visible, .toggle-group button:focus-visible { outline: 2px solid var(--orange) !important; outline-offset: 2px !important; }
-  @media (max-width: 900px) {
-    .two-col, .two-col-equal { grid-template-columns: 1fr !important; gap: 1.25rem !important; }
-    .metrics { grid-template-columns: 1fr 1fr !important; }
-    .metric.ytd-metric { grid-column: 1 / -1 !important; }
-    .controls { gap: 1.25rem !important; }
-  }
-  @media (max-width: 600px) {
-    .page { padding: 1.25rem 1rem 3.5rem !important; }
-    .controls, .year-controls { padding: 1.1rem !important; }
-    .controls .ctrl { flex: 1 1 100% !important; min-width: 0px !important; }
-    .controls select, .controls .toggle-group { width: 100% !important; min-width: 0px !important; }
-    select, select.year-select { min-width: 0px !important; max-width: 100% !important; }
-    .year-ctrl-inner { flex-wrap: wrap !important; gap: 0.75rem 1rem !important; }
-    .metrics { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
-    .metric { padding: 1rem !important; }
-    .ytd-metric .m-val { font-size: 40px !important; }
-    .m-val { font-size: 26px !important; }
-    .chart-title { font-size: 19px !important; }
-    .two-col-equal > .chart-section, .two-col > .chart-section, .movers-section, #app > .chart-section { padding: 1.15rem 1.1rem !important; border-radius: 10px !important; }
-    .movers-grid { grid-template-columns: 1fr !important; gap: 0.5rem !important; }
-    .methodology { padding: 1.15rem !important; }
-  }
-  @media (max-width: 600px) {
-    .movers-section > div[style*="justify-content:space-between"], .chart-section > div[style*="justify-content:space-between"] { flex-wrap: wrap !important; gap: 10px !important; }
-    .chart-section .toggle-group, .movers-section .toggle-group { flex-wrap: wrap !important; }
-    #map-controls { align-items: flex-start !important; }
-  }
-
-  /* ---- Meta strip fix: blend into warm canvas, quiet inline label ---- */
-  .data-bar { background:#f4f2ee !important; padding:1.25rem 0 0.25rem !important; border-bottom:none !important; }
-  .mast-badge { background:transparent !important; border:none !important; border-radius:0 !important; padding:0 !important; color:#8b8c90 !important; font-size:10px !important; letter-spacing:0.12em !important; }
-
-
-  /* ================================================================
-     MOBILE REFINEMENTS (tap targets + line-chart controls reflow)
-     ================================================================ */
-@media (max-width: 600px) {
-  /* Badge: wrap, no overflow */
-  .data-bar { padding: 1rem 0 0.25rem !important; }
-  .mast-badge { white-space: normal !important; line-height: 1.5 !important; display: block !important; max-width: 100% !important; }
-
-  /* Bigger, consistent tap targets */
-  select, select.year-select { height: 46px !important; font-size: 16px !important; }
-  .toggle-group { height: auto !important; }
-  .toggle-group button { min-height: 44px !important; font-size: 12px !important; padding: 0 10px !important; }
-
-  #subway-rate-toggle, #boro-rate-toggle, #map-metric-toggle,
-  #map-view-toggle, #map-period-toggle, #movers-mode-toggle,
-  #trend-toggle, #trend-window-toggle { height: auto !important; }
-  #subway-rate-toggle button, #boro-rate-toggle button,
-  #map-metric-toggle button, #map-view-toggle button,
-  #map-period-toggle button, #movers-mode-toggle button { min-height: 40px !important; font-size: 12px !important; }
-
-  /* Line chart controls reflow */
-  #trend-toggle { width: 100% !important; }
-  #trend-toggle button { flex: 1 !important; }
-  #trend-window-toggle {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    width: 100% !important;
-    border: 1px solid #d9d5cc !important;
-    border-radius: 7px !important;
-    overflow: hidden !important;
-  }
-  #trend-window-toggle button {
-    flex: none !important;
-    min-height: 44px !important;
-    font-size: 11px !important;
-    border-right: 1px solid #e6e2da !important;
-    border-bottom: 1px solid #e6e2da !important;
-    line-height: 1.15 !important;
-    white-space: normal !important;
-  }
-
-  #chart-trend, #chart-qtr { height: 220px !important; }
-  #chart-monthly { height: 240px !important; }
-  .year-ctrl-inner { flex-wrap: wrap !important; row-gap: 10px !important; }
-  #map-controls { align-items: flex-start !important; }
-}
-
-
-  /* ================================================================
-     WHITE THEME + CONTROL/OUTPUT DISTINCTION
-     Pure white bg + white data cards (black outline); filter &
-     year controls sit on a light-grey panel to read as the input zone.
-     ================================================================ */
-
-  /* TRUE WHITE everywhere */
-  html, body, .data-bar { background: #ffffff !important; }
-
-  /* Output/data cards: pure white, black outline, no shadow */
-  .two-col-equal > .chart-section, .two-col > .chart-section,
-  .movers-section, #app > .chart-section, .methodology {
-    background: #ffffff !important;
-    border: 1.5px solid #050507 !important;
-    border-radius: 8px !important;
-    box-shadow: none !important;
-  }
-  .metric { background:#ffffff !important; border:1.5px solid #050507 !important; border-radius:8px !important; box-shadow:none !important; }
-  .metric.ytd-metric { background:#050507 !important; border:1.5px solid #050507 !important; }
-
-  /* CONTROLS distinguished: light neutral panel */
-  .controls, .year-controls {
-    background: #f5f5f4 !important;
-    border: 1px solid #e3e3e1 !important;
-    border-radius: 10px !important;
-    box-shadow: none !important;
-  }
-  select, select.year-select { background-color: #ffffff !important; border:1px solid #cfcfcd !important; }
-
 </style>
 </head>
 <body>
@@ -727,11 +562,11 @@ select.year-select:focus { outline: 2px solid var(--orange); }
 </div>
 
 <div class="page" id="app" style="padding-top:1.5rem;">
-      <div class="state-screen">
-        <h2>Data file not found</h2>
-        <p>Place <code>crime_data.json</code> in the same folder as this HTML file, then reload.<br><br>
-        Generate it in RStudio with: <code>source("fetch_nypd_data.R")</code></p>
-      </div></div>
+    <div class="state-screen">
+    <h2>Loading data…</h2>
+    <p>Reading <code>crime_data.json</code></p>
+  </div>
+</div>
 
 <script>
 // ── Precinct → neighborhood names ────────────────────────────────────────────
@@ -775,9 +610,9 @@ const C_CMP     = "#dddddd";   // Cloud — comparison/background series
 const C_PRIMARY = "#ff7c53";   // alias
 const C_COMPARE = "#217ebe";   // cerulean — comparison role per design system
 const C_TREND   = "#ff7c53";   // Safety Orange — trend line per chart spec
-const C_GRID    = "rgba(5,5,7,0.07)"; // softened gridline (Vital City redesign)
-const C_AXIS    = "rgba(5,5,7,0.10)"; // softened axis (Vital City redesign)
-const C_LABEL   = "#8b8c90";   // lightened axis label (Vital City redesign)
+const C_GRID    = "#dddddd";   // Cloud — per chart spec
+const C_AXIS    = "#ebebeb";   // border color
+const C_LABEL   = "#707175";   // Charcoal — axis labels per chart spec
 
 const BORO_COLORS = {
   "Bronx":         "#ff7c53",
@@ -1612,17 +1447,9 @@ function render() {
       ? rawAnnual.map((v,i)=>{ const r=toRate(v,loc,boro,allYrs[i],null,"Q4"); return r==null?0:r; })
       : rawAnnual;
     const incomplete=allYrs.map(y=>!isFullYear(y));
-    // Vital City: in ANNUAL mode, drop a trailing incomplete year entirely
-    // (don't render the dashed partial-year segment — it reads poorly and the year isn't done).
-    let annYrs = allYrs, annData = aData, annIncomplete = incomplete;
-    if (annIncomplete.length && annIncomplete[annIncomplete.length-1]) {
-      annYrs = allYrs.slice(0, -1);
-      annData = aData.slice(0, -1);
-      annIncomplete = incomplete.slice(0, -1);
-    }
     const subLabel = isRate ? ` · ${rateLabel(loc)}` : "";
-    document.getElementById("trend-sub").textContent=`${crimeLabel} · Full year totals · ${minYr}–${annYrs[annYrs.length-1]||maxYr}${subLabel}${fullGeoLabel}`;
-    drawLine("chart-trend", annYrs.map(String), annData, primaryYear, cmpYear, "tt-trend", null, annIncomplete, isRate);
+    document.getElementById("trend-sub").textContent=`${crimeLabel} · Full year totals · ${minYr}–${maxYr}${curQ!=="Q4"?" ("+latestYear+" incomplete)":""}${subLabel}${fullGeoLabel}`;
+    drawLine("chart-trend", allYrs.map(String), aData, primaryYear, cmpYear, "tt-trend", null, incomplete, isRate);
   }
   // Top movers
   renderMovers(crime, loc, boro, primaryYear, cmpYear, primaryQ, inPctMode, pct);
@@ -1708,7 +1535,7 @@ function drawBars(id, labels, datasets, ttId) {
       const v=(niceMax/TICKS)*i, y=PT+cH-(v/niceMax)*cH;
       ctx.strokeStyle=C_GRID; ctx.lineWidth=1;
       ctx.beginPath(); ctx.moveTo(PL,y); ctx.lineTo(PL+cW,y); ctx.stroke();
-      ctx.fillStyle=C_LABEL; ctx.font="10px 'halyard-text','Inter','Helvetica Neue',Arial,sans-serif";
+      ctx.fillStyle=C_LABEL; ctx.font="10px -apple-system,sans-serif";
       ctx.textAlign="right"; ctx.fillText(fmtK(Math.round(v)),PL-5,y+3.5);
     }
     // Hover column highlight
@@ -1722,24 +1549,11 @@ function drawBars(id, labels, datasets, ttId) {
         const bH=(v/niceMax)*cH;
         const x=PL+i*groupW+gapX+di*barW;
         ctx.fillStyle = (hovIdx===i) ? d.color : d.color + "cc";
-        // Vital City redesign: rounded bar tops (radius capped at half-width / bar-height)
-        (function(){
-          const bw = barW-1, bx = x, by = PT+cH-bH, bhh = bH;
-          const rad = Math.max(0, Math.min(3, bw/2, bhh));
-          ctx.beginPath();
-          ctx.moveTo(bx, by+bhh);
-          ctx.lineTo(bx, by+rad);
-          ctx.quadraticCurveTo(bx, by, bx+rad, by);
-          ctx.lineTo(bx+bw-rad, by);
-          ctx.quadraticCurveTo(bx+bw, by, bx+bw, by+rad);
-          ctx.lineTo(bx+bw, by+bhh);
-          ctx.closePath();
-          ctx.fill();
-        })();
+        ctx.fillRect(x, PT+cH-bH, barW-1, bH);
       });
     });
     // X labels
-    ctx.fillStyle=C_LABEL; ctx.textAlign="center"; ctx.font="10px 'halyard-text','Inter','Helvetica Neue',Arial,sans-serif";
+    ctx.fillStyle=C_LABEL; ctx.textAlign="center"; ctx.font="10px -apple-system,sans-serif";
     labels.forEach((lbl,i)=>{ ctx.fillText(lbl, PL+i*groupW+groupW/2, H-6); });
     // Axis
     ctx.strokeStyle=C_AXIS; ctx.lineWidth=1;
@@ -1827,7 +1641,7 @@ function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplet
       const y=PT+cH-((v-niceMin)/(niceMax-niceMin))*cH;
       ctx.strokeStyle=C_GRID; ctx.lineWidth=1;
       ctx.beginPath(); ctx.moveTo(PL,y); ctx.lineTo(PL+cW,y); ctx.stroke();
-      ctx.fillStyle=C_LABEL; ctx.font="10px 'halyard-text','Inter','Helvetica Neue',Arial,sans-serif";
+      ctx.fillStyle=C_LABEL; ctx.font="10px -apple-system,sans-serif";
       ctx.textAlign="right";
       const lbl = v < 100 ? v.toFixed(1) : fmtK(Math.round(v));
       ctx.fillText(lbl, PL-5, y+3.5);
@@ -1884,7 +1698,7 @@ function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplet
         ctx.fillStyle=col; ctx.fill();
       }
       if((isCur||isCmp)&&!isHov&&!xOverride){
-        ctx.fillStyle=col; ctx.font="bold 10px 'halyard-text','Inter','Helvetica Neue',Arial,sans-serif";
+        ctx.fillStyle=col; ctx.font="bold 10px -apple-system,sans-serif";
         ctx.textAlign="center"; ctx.fillText(lbl,px(i),py(v)-10);
       }
     });
@@ -1892,12 +1706,12 @@ function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplet
     ctx.restore();
 
     // X labels
-    ctx.fillStyle=C_LABEL; ctx.font="10px 'halyard-text','Inter','Helvetica Neue',Arial,sans-serif";
+    ctx.fillStyle=C_LABEL; ctx.font="10px -apple-system,sans-serif";
     if(xOverride){
       // Horizontal labels for quarterly mode — only show every 3 years to avoid crowding
       ctx.textAlign="center";
       ctx.fillStyle=C_LABEL;
-      ctx.font="10px 'halyard-text','Inter','Helvetica Neue',Arial,sans-serif";
+      ctx.font="10px -apple-system,sans-serif";
       let lastDrawnX=-999;
       xOverride.forEach((lbl,i)=>{
         if(!lbl) return;
@@ -2108,8 +1922,16 @@ function renderMap(crimeLabel, curQ, latestYear) {
     geo.features.forEach(f => {
       const pct = parseInt(f.properties.precinct || 0);
       if (!pct) return;
-      const curRaw = getPctYTD(crime, pct, primaryYear, primaryQ, loc);
-      const prvRaw = getPctYTD(crime, pct, cmpYear, primaryQ, loc);
+      // Get value based on selected period
+      let curRaw, prvRaw;
+      if (mapPeriod === "ytd") {
+        curRaw = getPctYTD(crime, pct, primaryYear, primaryQ, loc);
+        prvRaw = getPctYTD(crime, pct, cmpYear, primaryQ, loc);
+      } else {
+        // Specific quarter: Q1, Q2, Q3, or Q4
+        curRaw = getPctCount(crime, pct, primaryYear, mapPeriod, loc);
+        prvRaw = getPctCount(crime, pct, cmpYear, mapPeriod, loc);
+      }
       let cur = curRaw, prv = prvRaw;
       if (mapIsRate && PCT_POP[String(pct)]) {
         const pop = PCT_POP[String(pct)];
@@ -2120,9 +1942,9 @@ function renderMap(crimeLabel, curQ, latestYear) {
       if (prv > 0) {
         changePct = ((cur - prv) / prv) * 100;
       } else if (cur > 0) {
-        changePct = 100; // new complaints where there were none — treat as max increase
+        changePct = 100;
       } else {
-        changePct = null; // both zero — no data
+        changePct = null;
       }
       pctChanges[pct] = { cur, prv, curRaw, prvRaw, pct: changePct };
     });
@@ -2437,6 +2259,7 @@ async function boot() {
   META.crime_groups=raw.crime_groups||[];
   META.crime_types=raw.crime_types||[];
   META.subway_ridership=raw.subway_ridership||{};
+  META.ridership_notes=raw.ridership_notes||[];
   META.population=raw.population||{};
   DATA=raw.data;
   // pct_data is split by location type
@@ -2470,7 +2293,5 @@ boot();
     new ResizeObserver(sendHeight).observe(document.body);
   })();
 </script>
-
-
-
-</body></html>
+</body>
+</html>
