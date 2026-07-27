@@ -985,11 +985,12 @@ function buildApp() {
             <button data-loc="subway" data-rate="count" id="btn-subway-count">Subway</button>
             <button data-loc="housing" data-rate="count">Housing</button>
           </div>
-          <div id="subway-rate-row" style="display:none;justify-content:flex-end;">
+          <div id="subway-rate-row" style="display:none;justify-content:flex-end;flex-direction:column;align-items:flex-end;">
             <div class="toggle-group" id="subway-rate-toggle" style="height:26px;">
               <button data-subrate="count" class="active" style="font-size:10px;padding:0 10px;">Count</button>
               <button data-subrate="rate" style="font-size:10px;padding:0 10px;">Rate</button>
             </div>
+            <div id="ridership-note" style="display:none;margin-top:6px;font-size:11px;color:var(--charcoal);line-height:1.4;font-style:italic;max-width:280px;text-align:right;"></div>
           </div>
         </div>
       </div>
@@ -1365,6 +1366,18 @@ function render() {
   const isRate = state.subwayRate;
   const rateNote = document.getElementById("subway-rate-note");
   if (rateNote) rateNote.style.display = isRate ? "block" : "none";
+
+  // Show projected-ridership note if any months were projected from prior year
+  const ridershipNoteEl = document.getElementById("ridership-note");
+  if (ridershipNoteEl) {
+    if (isRate && loc === "subway" && META.ridership_notes && META.ridership_notes.length > 0) {
+      const notes = META.ridership_notes.map(n => n.note).join(" · ");
+      ridershipNoteEl.textContent = "Note: " + notes;
+      ridershipNoteEl.style.display = "block";
+    } else {
+      ridershipNoteEl.style.display = "none";
+    }
+  }
 
   // Geography labels — used across all chart subtitles
   const geoShort = inPctMode
@@ -2108,8 +2121,15 @@ function renderMap(crimeLabel, curQ, latestYear) {
     geo.features.forEach(f => {
       const pct = parseInt(f.properties.precinct || 0);
       if (!pct) return;
-      const curRaw = getPctYTD(crime, pct, primaryYear, primaryQ, loc);
-      const prvRaw = getPctYTD(crime, pct, cmpYear, primaryQ, loc);
+      // Use selected map period (YTD or specific quarter)
+      let curRaw, prvRaw;
+      if (mapPeriod === "ytd") {
+        curRaw = getPctYTD(crime, pct, primaryYear, primaryQ, loc);
+        prvRaw = getPctYTD(crime, pct, cmpYear, primaryQ, loc);
+      } else {
+        curRaw = getPctCount(crime, pct, primaryYear, mapPeriod, loc);
+        prvRaw = getPctCount(crime, pct, cmpYear, mapPeriod, loc);
+      }
       let cur = curRaw, prv = prvRaw;
       if (mapIsRate && PCT_POP[String(pct)]) {
         const pop = PCT_POP[String(pct)];
@@ -2437,6 +2457,7 @@ async function boot() {
   META.crime_groups=raw.crime_groups||[];
   META.crime_types=raw.crime_types||[];
   META.subway_ridership=raw.subway_ridership||{};
+  META.ridership_notes=raw.ridership_notes||[];
   META.population=raw.population||{};
   DATA=raw.data;
   // pct_data is split by location type
