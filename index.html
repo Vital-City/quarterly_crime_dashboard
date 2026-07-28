@@ -1467,12 +1467,18 @@ function render() {
     let boroText = '';
     if (loc === "subway") boroText = "SUBWAY";
     else if (loc === "housing") boroText = "PUBLIC HOUSING";
+    else if (inPctMode) {
+      // Use the borough that the precinct belongs to, not "CITYWIDE"
+      const pctBoro = PCT_BOROUGH[pct] || boro;
+      boroText = pctBoro !== "All boroughs" ? pctBoro.toUpperCase() : "";
+    }
     else if (boro !== "All boroughs") boroText = boro.toUpperCase();
     else boroText = "CITYWIDE";
     let pctText = "";
     if (inPctMode) {
       const pctName = PRECINCT_NAMES[pct] || "";
-      pctText = ` <span class="pct-tag">· PCT. ${pct}${pctName ? ' · ' + pctName.toUpperCase() : ''}</span>`;
+      const sep = boroText ? ' · ' : '';
+      pctText = ` <span class="pct-tag">${sep}PCT. ${pct}${pctName ? ' · ' + pctName.toUpperCase() : ''}</span>`;
     }
     return boroText + pctText;
   }
@@ -1568,12 +1574,15 @@ function render() {
   });
   const allMetrics = [ytdMetric, ...qtrMetrics];
   // Build a location tag shown at the top of each metric card
-  const locationTag = inPctMode
-    ? `Pct. ${pct}${PRECINCT_NAMES[pct] ? ` · ${PRECINCT_NAMES[pct]}` : ''}`
-    : boro !== "All boroughs" ? boro
-    : loc === "subway" ? "Subway"
-    : loc === "housing" ? "Public housing"
-    : "Citywide";
+  let locationTag;
+  if (inPctMode) {
+    const pctBoro = PCT_BOROUGH[pct] || (boro !== "All boroughs" ? boro : "");
+    const pctName = PRECINCT_NAMES[pct] || "";
+    locationTag = (pctBoro ? pctBoro + " · " : "") + `Pct. ${pct}` + (pctName ? ` · ${pctName}` : "");
+  } else if (loc === "subway") locationTag = "Subway";
+  else if (loc === "housing") locationTag = "Public housing";
+  else if (boro !== "All boroughs") locationTag = boro;
+  else locationTag = "Citywide";
   const locationTagColor = (inPctMode || boro !== "All boroughs" || loc !== "citywide") ? "var(--orange)" : "var(--charcoal)";
   document.getElementById("metrics-row").innerHTML = allMetrics.map(m=>`
     <div class="metric${m.isYTD?" ytd-metric":""}">
