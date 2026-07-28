@@ -269,6 +269,16 @@ select:focus { outline: 2px solid var(--orange); outline-offset: 0; }
 
 
 
+
+.chart-crime {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 22px;
+  color: #217ebe;
+  line-height: 1.15;
+  margin-bottom: 8px;
+}
+
 .chart-location {
   font-family: var(--font-primary);
   font-weight: 700;
@@ -1070,9 +1080,8 @@ function buildApp() {
     <div class="two-col-equal">
       <div class="chart-section">
         <div class="chart-rule"></div>
-        <div class="chart-title">Quarter by quarter</div>
         <div class="chart-location" id="qtr-location"></div>
-        <div class="chart-sub" id="qtr-sub"></div>
+        <div class="chart-crime" id="qtr-crime"></div>
         <div class="legend" id="qtr-legend"></div>
         <div style="position:relative;">
           <canvas id="chart-qtr" style="width:100%;height:200px;display:block;"></canvas>
@@ -1082,9 +1091,10 @@ function buildApp() {
       </div>
       <div class="chart-section">
         <div class="chart-rule"></div>
+        <div class="chart-location" id="trend-location"></div>
         <div style="margin-bottom:10px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;">
-            <div class="chart-title" style="min-width:0;">Long-term trend</div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px;gap:10px;">
+            <div class="chart-crime" id="trend-crime" style="min-width:0;margin-bottom:0;"></div>
             <div class="toggle-group" id="trend-toggle" style="height:32px;flex-shrink:0;">
               <button data-trend="ytd" class="active" style="font-size:11px;padding:0 16px;">YTD</button>
               <button data-trend="quarterly" style="font-size:11px;padding:0 16px;">Quarterly</button>
@@ -1098,8 +1108,6 @@ function buildApp() {
             <button data-window="5yr" style="font-size:10px;flex:1 1 auto;white-space:nowrap;padding:0 12px;">Last 5 years</button>
           </div>
         </div>
-        <div class="chart-location" id="trend-location"></div>
-        <div class="chart-sub" id="trend-sub"></div>
         <div style="position:relative;">
           <canvas id="chart-trend" style="width:100%;height:200px;display:block;"></canvas>
           <div id="tt-trend" class="tooltip"></div>
@@ -1113,9 +1121,8 @@ function buildApp() {
     <div class="two-col">
       <div class="chart-section">
         <div class="chart-rule"></div>
-        <div class="chart-title">Monthly complaints — YTD</div>
         <div class="chart-location" id="monthly-location"></div>
-        <div class="chart-sub" id="monthly-sub"></div>
+        <div class="chart-crime" id="monthly-crime"></div>
         <div class="legend" id="monthly-legend"></div>
         <div style="position:relative;">
           <canvas id="chart-monthly" style="width:100%;height:220px;display:block;"></canvas>
@@ -1487,6 +1494,12 @@ function render() {
     const el = document.getElementById(id);
     if (el) el.innerHTML = locHTML;
   });
+  // Also populate the crime type header on each chart (in cerulean blue)
+  const crimeDisplay = crime;
+  ["qtr-crime","trend-crime","monthly-crime","boro-crime","movers-crime"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = "";  // placeholder — will be set after crimeLabel
+  });
 
 
   // isRate must be defined before geo labels (locLabel2 depends on it)
@@ -1524,6 +1537,11 @@ function render() {
     return s.toLowerCase().split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   }
   const crimeLabel = formatCrimeName(crime);
+  // Set crime type header on each chart
+  ["qtr-crime","trend-crime","monthly-crime","boro-crime","movers-crime"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = crimeLabel;
+  });
 
   function getC(cr, lc, bo, yr, q) {
     return inPctMode ? getPctCount(cr, pct, yr, q, lc) : getCount(cr, lc, bo, yr, q);
@@ -1584,9 +1602,11 @@ function render() {
   else if (boro !== "All boroughs") locationTag = boro;
   else locationTag = "Citywide";
   const locationTagColor = (inPctMode || boro !== "All boroughs" || loc !== "citywide") ? "var(--orange)" : "var(--charcoal)";
+  // Use same location HTML format as chart location tags (uppercase caps)
+  const ytdLocationHTML = chartLocationHTML();
   document.getElementById("metrics-row").innerHTML = allMetrics.map(m=>`
     <div class="metric${m.isYTD?" ytd-metric":""}">
-      <div class="m-location" style="font-family:var(--font-primary);font-weight:700;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:${locationTagColor};margin-bottom:6px;line-height:1.3;">${locationTag}</div>
+      ${m.isYTD ? `<div class="chart-location" style="margin-bottom:6px;">${ytdLocationHTML}</div>` : ''}
       <div class="m-label">${m.label}</div>
       <div class="m-val">${m.val}</div>
       <div class="m-delta ${m.delta.cls}">${m.delta.text}</div>
@@ -1648,7 +1668,7 @@ function render() {
 
   // Borough bars vs Ridership chart — swap based on location
   const boroSection = document.querySelector(".two-col");
-  const boroTitle    = document.getElementById("boro-chart-title");
+  const boroTitle    = null; // removed
   const boroLegendEl = document.getElementById("boro-legend");
   const boroListEl   = document.getElementById("boro-list");
   const boroToggleEl = document.getElementById("boro-rate-toggle");
@@ -1658,7 +1678,7 @@ function render() {
     // Show subway ridership chart, hide borough bars
     const rView = state.ridershipView || "monthly";
     const viewTitle = rView === "ytd" ? "YTD" : rView === "annual" ? "annual" : "monthly";
-    boroTitle.textContent = `Subway ridership — ${viewTitle}`;
+    // boro-chart-title removed; crime label handled separately
     boroToggleEl.style.display = "none";
     boroLegendEl.style.display = "block";
     boroListEl.style.display = "none";
@@ -1723,7 +1743,7 @@ function render() {
     }
   } else {
     // Restore borough bars view
-    boroTitle.textContent = "By borough — YTD";
+    // boro-chart-title removed
     boroToggleEl.style.display = "";
     boroLegendEl.style.display = "";
     boroListEl.style.display = "";
