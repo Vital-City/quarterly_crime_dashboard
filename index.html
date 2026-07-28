@@ -268,6 +268,19 @@ select:focus { outline: 2px solid var(--orange); outline-offset: 0; }
 }
 
 
+
+.chart-location {
+  font-family: var(--font-primary);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 2px 0 6px 0;
+  line-height: 1.3;
+}
+.chart-location .pct-tag { color: var(--orange); }
+
 /* CSV download buttons */
 .csv-btn {
   background: transparent;
@@ -1053,6 +1066,7 @@ function buildApp() {
           <div class="chart-title">Quarter by quarter</div>
           <button class="csv-btn" data-csv="qtr">↓ CSV</button>
         </div>
+        <div class="chart-location" id="qtr-location"></div>
         <div class="chart-sub" id="qtr-sub"></div>
         <div class="legend" id="qtr-legend"></div>
         <div style="position:relative;">
@@ -1063,13 +1077,15 @@ function buildApp() {
       <div class="chart-section">
         <div class="chart-rule"></div>
         <div style="margin-bottom:10px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div class="chart-title">Long-term trend</div>
-            <div class="toggle-group" id="trend-toggle" style="height:32px;">
-              <button data-trend="ytd" class="active" style="font-size:11px;padding:0 16px;">YTD</button>
-              <button data-trend="quarterly" style="font-size:11px;padding:0 16px;">Quarterly</button>
-              <button data-trend="annual" style="font-size:11px;padding:0 16px;">Annual</button>
-            </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;">
+            <div class="chart-title" style="min-width:0;">Long-term trend</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+              <button class="csv-btn" data-csv="trend">↓ CSV</button>
+              <div class="toggle-group" id="trend-toggle" style="height:32px;">
+                <button data-trend="ytd" class="active" style="font-size:11px;padding:0 16px;">YTD</button>
+                <button data-trend="quarterly" style="font-size:11px;padding:0 16px;">Quarterly</button>
+                <button data-trend="annual" style="font-size:11px;padding:0 16px;">Annual</button>
+              </div>
             </div>
           </div>
           <div class="toggle-group" id="trend-window-toggle" style="height:26px;width:100%;">
@@ -1079,6 +1095,7 @@ function buildApp() {
             <button data-window="5yr" style="font-size:10px;flex:1 1 auto;white-space:nowrap;padding:0 12px;">Last 5 years</button>
           </div>
         </div>
+        <div class="chart-location" id="trend-location"></div>
         <div class="chart-sub" id="trend-sub"></div>
         <div style="position:relative;">
           <canvas id="chart-trend" style="width:100%;height:200px;display:block;"></canvas>
@@ -1096,6 +1113,7 @@ function buildApp() {
           <div class="chart-title">Monthly complaints — YTD</div>
           <button class="csv-btn" data-csv="monthly">↓ CSV</button>
         </div>
+        <div class="chart-location" id="monthly-location"></div>
         <div class="chart-sub" id="monthly-sub"></div>
         <div class="legend" id="monthly-legend"></div>
         <div style="position:relative;">
@@ -1118,6 +1136,7 @@ function buildApp() {
             <button data-rview="annual" style="font-size:10px;padding:0 8px;white-space:nowrap;">Annual</button>
           </div>
         </div>
+        <div class="chart-location" id="boro-location"></div>
         <div class="chart-sub" id="boro-sub"></div>
         <div class="legend" id="boro-legend"></div>
         <div class="boro-list" id="boro-list"></div>
@@ -1127,13 +1146,17 @@ function buildApp() {
     </div>
     <div class="movers-section" id="movers-section">
       <div class="chart-rule"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-        <div class="chart-title">Top movers — YTD</div>
-        <div class="toggle-group" id="movers-mode-toggle" style="height:26px;">
-          <button data-moversmode="pct" class="active" style="font-size:10px;padding:0 10px;">% change</button>
-          <button data-moversmode="abs" style="font-size:10px;padding:0 10px;">Absolute change</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:10px;">
+        <div class="chart-title" style="min-width:0;">Top movers — YTD</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+          <button class="csv-btn" data-csv="movers">↓ CSV</button>
+          <div class="toggle-group" id="movers-mode-toggle" style="height:26px;">
+            <button data-moversmode="pct" class="active" style="font-size:10px;padding:0 10px;">% change</button>
+            <button data-moversmode="abs" style="font-size:10px;padding:0 10px;">Absolute change</button>
+          </div>
         </div>
       </div>
+      <div class="chart-location" id="movers-location"></div>
       <div class="movers-grid">
         <div class="movers-col">
           <div class="movers-col-title up" id="movers-up-title">▲ Top 5 increases</div>
@@ -1151,6 +1174,7 @@ function buildApp() {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
         <div>
           <div class="chart-title">YTD change by precinct</div>
+          <div class="chart-location" id="map-location"></div>
           <div class="chart-sub" id="map-sub"></div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
@@ -1437,6 +1461,27 @@ function render() {
   const mapHint = document.getElementById("map-hint");
   if (mapClearBtn2) mapClearBtn2.style.display = inPctMode ? "block" : "none";
   if (mapHint) mapHint.style.display = inPctMode ? "none" : "block";
+
+  // Build & set location tag on every chart. Boro in black caps, precinct in orange caps.
+  function chartLocationHTML() {
+    let boroText = '';
+    if (loc === "subway") boroText = "SUBWAY";
+    else if (loc === "housing") boroText = "PUBLIC HOUSING";
+    else if (boro !== "All boroughs") boroText = boro.toUpperCase();
+    else boroText = "CITYWIDE";
+    let pctText = "";
+    if (inPctMode) {
+      const pctName = (typeof PCT_NAMES !== "undefined" && PCT_NAMES[pct]) ? PCT_NAMES[pct] : "";
+      pctText = ` <span class="pct-tag">· PCT. ${pct}${pctName ? ' · ' + pctName.toUpperCase() : ''}</span>`;
+    }
+    return boroText + pctText;
+  }
+  const locHTML = chartLocationHTML();
+  ["qtr-location","trend-location","monthly-location","boro-location","map-location","movers-location"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = locHTML;
+  });
+
 
   // isRate must be defined before geo labels (locLabel2 depends on it)
   const isRate = state.subwayRate;
