@@ -267,6 +267,29 @@ select:focus { outline: 2px solid var(--orange); outline-offset: 0; }
   margin-bottom: 3rem;
 }
 
+
+/* CSV download buttons */
+.csv-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--charcoal);
+  font-family: var(--font-primary);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 5px 10px;
+  white-space: nowrap;
+  height: 26px;
+  line-height: 1;
+}
+.csv-btn:hover {
+  color: var(--text);
+  border-color: var(--text);
+  background: #ffffff;
+}
+
 /* ── Legend ── */
 .legend {
   display: flex;
@@ -1022,21 +1045,14 @@ function buildApp() {
         </div>
       </div>
     </div>
-    <div id="precinct-banner" style="display:none;background:#050507;color:#ffffff;padding:12px 20px;margin-bottom:1rem;align-items:center;justify-content:space-between;gap:16px;">
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <span style="font-family:var(--font-primary);font-weight:700;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#ff7c53;">Viewing precinct</span>
-        <span id="precinct-banner-label" style="font-family:var(--font-display);font-weight:500;font-size:18px;"></span>
-        <span style="font-size:12px;color:rgba(255,255,255,0.7);">All charts and numbers below reflect this precinct only</span>
-      </div>
-      <button id="clear-precinct-btn" style="background:transparent;color:#ffffff;border:1px solid rgba(255,255,255,0.4);padding:6px 14px;font-family:var(--font-primary);font-weight:700;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">
-        × Clear · Show all
-      </button>
-    </div>
     <div class="metrics" id="metrics-row"></div>
     <div class="two-col-equal">
       <div class="chart-section">
         <div class="chart-rule"></div>
-        <div class="chart-title">Quarter by quarter</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <div class="chart-title">Quarter by quarter</div>
+          <button class="csv-btn" data-csv="qtr">↓ CSV</button>
+        </div>
         <div class="chart-sub" id="qtr-sub"></div>
         <div class="legend" id="qtr-legend"></div>
         <div style="position:relative;">
@@ -1053,6 +1069,7 @@ function buildApp() {
               <button data-trend="ytd" class="active" style="font-size:11px;padding:0 16px;">YTD</button>
               <button data-trend="quarterly" style="font-size:11px;padding:0 16px;">Quarterly</button>
               <button data-trend="annual" style="font-size:11px;padding:0 16px;">Annual</button>
+            </div>
             </div>
           </div>
           <div class="toggle-group" id="trend-window-toggle" style="height:26px;width:100%;">
@@ -1075,7 +1092,10 @@ function buildApp() {
     <div class="two-col">
       <div class="chart-section">
         <div class="chart-rule"></div>
-        <div class="chart-title">Monthly complaints — YTD</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <div class="chart-title">Monthly complaints — YTD</div>
+          <button class="csv-btn" data-csv="monthly">↓ CSV</button>
+        </div>
         <div class="chart-sub" id="monthly-sub"></div>
         <div class="legend" id="monthly-legend"></div>
         <div style="position:relative;">
@@ -1087,6 +1107,7 @@ function buildApp() {
         <div class="chart-rule" id="boro-rule"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:12px;">
           <div class="chart-title" id="boro-chart-title" style="min-width:0;overflow:hidden;text-overflow:ellipsis;">By borough — YTD</div>
+          <button class="csv-btn" data-csv="boro">↓ CSV</button>
           <div class="toggle-group" id="boro-rate-toggle" style="height:24px;">
             <button data-bororate="count" class="active" style="font-size:10px;padding:0 8px;">Count</button>
             <button data-bororate="rate" style="font-size:10px;padding:0 8px;">Rate</button>
@@ -1197,6 +1218,11 @@ function buildApp() {
 
 
 
+    <div style="margin:1rem 0 1.5rem 0;padding:14px 16px;background:#f8f7f4;border-left:2px solid var(--orange);">
+      <div style="font-family:var(--font-primary);font-weight:700;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--charcoal);margin-bottom:6px;">Download data</div>
+      <div style="font-size:13px;color:var(--text);margin-bottom:8px;">Download the full crime dataset including all boroughs, precincts, monthly data, and metadata as JSON. Each chart above also has a CSV download for the current view.</div>
+      <button id="download-full-dataset" class="csv-btn" style="height:32px;font-size:10px;padding:0 14px;">↓ Download full dataset (JSON)</button>
+    </div>
     <div class="source"><strong>Source:</strong> NYPD Complaint Data (Historic and Year-to-Date), NYC Open Data. Combined categories defined by Vital City. Subway counts reflect complaints by NYPD Transit Bureau; public housing counts reflect NYCHA developments. Data updated quarterly. <a href="https://data.cityofnewyork.us/Public-Safety/NYPD-Complaint-Data-Historic/qgea-i56i" target="_blank" style="color:var(--orange);">Historic dataset</a> · <a href="https://data.cityofnewyork.us/Public-Safety/NYPD-Complaint-Data-Current-Year-To-Date-/5uac-w243" target="_blank" style="color:var(--orange);">YTD dataset</a></div>
   `;
 
@@ -1211,20 +1237,17 @@ function buildApp() {
     state.precinct = e.target.value ? parseInt(e.target.value) : null;
     render();
   });
-  document.getElementById("clear-precinct-btn").addEventListener("click", () => {
-    state.precinct = null;
-    const pctSel = document.getElementById("sel-precinct");
-    if (pctSel) pctSel.value = "";
-    render();
-    document.getElementById("metrics-row").scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-  // Also wire the on-map clear button
+  // On-map clear button — also resets borough to "All boroughs"
   const mapClearBtn = document.getElementById("clear-precinct-map-btn");
   if (mapClearBtn) {
     mapClearBtn.addEventListener("click", () => {
       state.precinct = null;
+      state.borough = "All boroughs";
       const pctSel = document.getElementById("sel-precinct");
+      const boroSel = document.getElementById("sel-borough");
       if (pctSel) pctSel.value = "";
+      if (boroSel) boroSel.value = "All boroughs";
+      updatePrecinctDropdown();
       render();
       document.getElementById("metrics-row").scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -1409,17 +1432,6 @@ function render() {
   const pct = state.precinct;
   const inPctMode = !!(pct);
 
-  // Show/hide "Viewing precinct" banner
-  const pctBanner = document.getElementById("precinct-banner");
-  const pctBannerLabel = document.getElementById("precinct-banner-label");
-  if (pctBanner) {
-    if (inPctMode) {
-      pctBanner.style.display = "flex";
-      if (pctBannerLabel) pctBannerLabel.textContent = pctLabel(pct);
-    } else {
-      pctBanner.style.display = "none";
-    }
-  }
   // Show clear button and hide hint on map when a precinct is selected
   const mapClearBtn2 = document.getElementById("clear-precinct-map-btn");
   const mapHint = document.getElementById("map-hint");
@@ -1491,7 +1503,7 @@ function render() {
 
   const ytdLabel = isRate
     ? `YTD ${primaryYear} · ${rateLabel(loc)}`
-    : `YTD · ${crimeLabel} · ${geoShort}`;
+    : `YTD · ${crimeLabel}`;
   const ytdMetric = {
     label: ytdLabel,
     val: displayVal(pYTD, primaryYear, null, primaryQ),
@@ -1510,8 +1522,17 @@ function render() {
     };
   });
   const allMetrics = [ytdMetric, ...qtrMetrics];
+  // Build a location tag shown at the top of each metric card
+  const locationTag = inPctMode
+    ? `Pct. ${pct}${PCT_NAMES[pct] ? ` · ${PCT_NAMES[pct]}` : ''}`
+    : boro !== "All boroughs" ? boro
+    : loc === "subway" ? "Subway"
+    : loc === "housing" ? "Public housing"
+    : "Citywide";
+  const locationTagColor = (inPctMode || boro !== "All boroughs" || loc !== "citywide") ? "var(--orange)" : "var(--charcoal)";
   document.getElementById("metrics-row").innerHTML = allMetrics.map(m=>`
     <div class="metric${m.isYTD?" ytd-metric":""}">
+      <div class="m-location" style="font-family:var(--font-primary);font-weight:700;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:${locationTagColor};margin-bottom:6px;line-height:1.3;">${locationTag}</div>
       <div class="m-label">${m.label}</div>
       <div class="m-val">${m.val}</div>
       <div class="m-delta ${m.delta.cls}">${m.delta.text}</div>
@@ -2636,6 +2657,213 @@ async function boot() {
   buildApp();
   render();
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CSV DOWNLOAD FUNCTIONALITY
+// ─────────────────────────────────────────────────────────────────────────────
+function downloadCsv(filename, rows) {
+  const csv = rows.map(row =>
+    row.map(cell => {
+      if (cell == null) return "";
+      const s = String(cell);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+    }).join(",")
+  ).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function buildCsvFilename(chartLabel) {
+  const crime = (state.crime || "all-crime").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g,"");
+  const loc = state.loc;
+  const geo = state.precinct ? `pct-${state.precinct}` : state.borough === "All boroughs" ? "citywide" : state.borough.toLowerCase().replace(/ /g,"-");
+  const pri = state.primaryYear, cmp = state.cmpYear;
+  return `nyc-crime_${crime}_${loc}_${geo}_${chartLabel}_${pri}-vs-${cmp}.csv`;
+}
+
+function csvHandlers() {
+  const primaryYear = state.primaryYear || String(META.current_year);
+  const cmpYear = state.cmpYear;
+  const crime = state.crime, loc = state.loc, boro = state.borough;
+  const pct = state.precinct, inPctMode = !!pct;
+  const isPrimaryLatest = String(primaryYear) === String(META.current_year);
+  const primaryQ = isPrimaryLatest ? META.current_quarter : "Q4";
+  const isRate = state.subwayRate;
+
+  function getVal(year, q) {
+    const raw = inPctMode ? getPctCount(crime, pct, year, q, loc)
+                          : getC(crime, loc, boro, year, q);
+    if (!isRate) return raw;
+    const r = toRate(raw, loc, boro, year, q, null);
+    return r == null ? "" : r;
+  }
+  function getYtdVal(year, upTo) {
+    const raw = inPctMode ? getPctYTD(crime, pct, year, upTo, loc)
+                          : getYTD(crime, loc, boro, year, upTo);
+    if (!isRate) return raw;
+    const r = toRate(raw, loc, boro, year, null, upTo);
+    return r == null ? "" : r;
+  }
+
+  const unit = isRate ? (loc === "subway" ? "per_million_rides" : "per_100k_residents") : "count";
+
+  return {
+    qtr: () => {
+      const rows = [["Quarter", `${primaryYear}_${unit}`, `${cmpYear}_${unit}`, "pct_change"]];
+      QUARTERS.forEach(q => {
+        const p = getVal(primaryYear, q), c = getVal(cmpYear, q);
+        const pc = (typeof p === "number" && typeof c === "number" && c > 0)
+          ? ((p - c) / c * 100).toFixed(1) : "";
+        rows.push([q, p, c, pc]);
+      });
+      downloadCsv(buildCsvFilename("quarter-by-quarter"), rows);
+    },
+    monthly: () => {
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const rows = [["Month", `${primaryYear}_${unit}`, `${cmpYear}_${unit}`]];
+      months.forEach((m, i) => {
+        const mo = i + 1;
+        let pVal, cVal;
+        if (inPctMode) {
+          pVal = getPctMonthlyCount(crime, pct, primaryYear, mo, loc);
+          cVal = getPctMonthlyCount(crime, pct, cmpYear, mo, loc);
+        } else {
+          pVal = getMonthlyCount(crime, loc, boro, primaryYear, mo);
+          cVal = getMonthlyCount(crime, loc, boro, cmpYear, mo);
+        }
+        if (isRate) {
+          const pR = toRate(pVal, loc, boro, primaryYear, "Q"+Math.ceil(mo/3), null);
+          const cR = toRate(cVal, loc, boro, cmpYear, "Q"+Math.ceil(mo/3), null);
+          pVal = pR == null ? "" : pR;
+          cVal = cR == null ? "" : cR;
+        }
+        rows.push([m, pVal, cVal]);
+      });
+      downloadCsv(buildCsvFilename("monthly"), rows);
+    },
+    trend: () => {
+      const mode = state.trendMode || "ytd";
+      const rows = [];
+      const dataYears = getAllYears();
+      const maxYr = parseInt(primaryYear);
+      const trendWindow = state.trendWindow || "all";
+      const windowStart = trendWindow === "10yr" ? maxYr - 9
+                        : trendWindow === "prepandemic" ? 2019
+                        : trendWindow === "5yr" ? maxYr - 4 : 2006;
+      const minYr = Math.max(windowStart, Math.min(...dataYears, 2006));
+      if (mode === "ytd") {
+        rows.push(["Year", `${unit}_ytd_through_${primaryQ}`]);
+        for (let y = minYr; y <= maxYr; y++) rows.push([y, getYtdVal(y, primaryQ)]);
+      } else if (mode === "quarterly") {
+        rows.push(["Year_Quarter", unit]);
+        for (let y = minYr; y <= maxYr; y++) {
+          QUARTERS.forEach(q => {
+            if (y === maxYr && QUARTERS.indexOf(q) > QUARTERS.indexOf(primaryQ)) return;
+            rows.push([`${y} ${q}`, getVal(y, q)]);
+          });
+        }
+      } else {
+        rows.push(["Year", `${unit}_annual`]);
+        for (let y = minYr; y <= maxYr; y++) rows.push([y, getYtdVal(y, "Q4")]);
+      }
+      downloadCsv(buildCsvFilename(`long-term-trend-${mode}`), rows);
+    },
+    boro: () => {
+      if (loc === "subway") {
+        const rView = state.ridershipView || "monthly";
+        const rows = [];
+        if (rView === "monthly") {
+          const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+          rows.push(["Month", `${primaryYear}_rides`, `${cmpYear}_rides`]);
+          months.forEach((m, i) => {
+            rows.push([m, getSubwayRidershipMonth(primaryYear, i+1) || "", getSubwayRidershipMonth(cmpYear, i+1) || ""]);
+          });
+        } else {
+          rows.push(["Year", `total_rides_${rView === "ytd" ? "ytd" : "annual"}`]);
+          const dataYears = getAllYears();
+          const maxYr = parseInt(primaryYear);
+          const trendWindow = state.trendWindow || "all";
+          const windowStart = trendWindow === "10yr" ? maxYr - 9
+                            : trendWindow === "prepandemic" ? 2019
+                            : trendWindow === "5yr" ? maxYr - 4 : 2006;
+          const minYr = Math.max(windowStart, Math.min(...dataYears, 2006));
+          const isYtd = rView === "ytd";
+          const excludeCurrent = !isYtd && String(primaryYear) === String(META.current_year) && primaryQ !== "Q4";
+          for (let y = minYr; y <= maxYr; y++) {
+            if (excludeCurrent && y === maxYr) continue;
+            const quarters = ["Q1","Q2","Q3","Q4"];
+            const upToIdx = isYtd ? quarters.indexOf(primaryQ) : 3;
+            let total = 0;
+            for (let i = 0; i <= upToIdx; i++) total += getSubwayRidership(y, quarters[i]) || 0;
+            rows.push([y, total]);
+          }
+        }
+        downloadCsv(buildCsvFilename(`subway-ridership-${state.ridershipView||"monthly"}`), rows);
+      } else {
+        const rows = [["Borough", `${primaryYear}_${unit}`]];
+        ["Bronx","Brooklyn","Manhattan","Queens","Staten Island"].forEach(b => {
+          const rawVal = getYTD(crime, loc, b, primaryYear, primaryQ);
+          if (isRate && loc === "citywide") {
+            const r = toRate(rawVal, loc, b, primaryYear, null, primaryQ);
+            rows.push([b, r == null ? "" : r]);
+          } else {
+            rows.push([b, rawVal]);
+          }
+        });
+        downloadCsv(buildCsvFilename("by-borough"), rows);
+      }
+    },
+    movers: () => {
+      const mode = state.moversMode || "pct";
+      const rows = [["Direction", "Crime type", `${primaryYear}_count`, `${cmpYear}_count`, "abs_change", "pct_change"]];
+      const items = [];
+      META.crime_types.forEach(cr => {
+        const cur = inPctMode ? getPctYTD(cr, pct, primaryYear, primaryQ, loc)
+                              : getYTD(cr, loc, boro, primaryYear, primaryQ);
+        const prv = inPctMode ? getPctYTD(cr, pct, cmpYear, primaryQ, loc)
+                              : getYTD(cr, loc, boro, cmpYear, primaryQ);
+        if (cur + prv < 10) return;
+        const abs = cur - prv;
+        const pctC = prv > 0 ? ((cur - prv) / prv * 100) : (cur > 0 ? 100 : null);
+        items.push({crime: cr, cur, prv, abs, pctC});
+      });
+      const sorter = mode === "pct"
+        ? (a,b) => (b.pctC ?? -Infinity) - (a.pctC ?? -Infinity)
+        : (a,b) => b.abs - a.abs;
+      const sorted = [...items].sort(sorter);
+      sorted.slice(0, 5).forEach(x => rows.push(["increase", x.crime, x.cur, x.prv, x.abs, x.pctC == null ? "" : x.pctC.toFixed(1)]));
+      [...sorted].reverse().slice(0, 5).forEach(x => rows.push(["decrease", x.crime, x.cur, x.prv, x.abs, x.pctC == null ? "" : x.pctC.toFixed(1)]));
+      downloadCsv(buildCsvFilename(`top-movers-${mode}`), rows);
+    }
+  };
+}
+
+// Wire CSV button clicks (global delegation)
+document.addEventListener("click", (e) => {
+  const csvBtn = e.target.closest(".csv-btn[data-csv]");
+  if (csvBtn) {
+    const chart = csvBtn.dataset.csv;
+    const handlers = csvHandlers();
+    if (handlers[chart]) handlers[chart]();
+    return;
+  }
+  if (e.target.id === "download-full-dataset") {
+    fetch("crime_data.json")
+      .then(r => r.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = "nyc-crime-full-dataset.json";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+  }
+});
+
 boot();
 </script>
 <script>
