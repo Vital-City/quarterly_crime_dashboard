@@ -1595,7 +1595,6 @@ function render() {
                isYtd ? primaryYear : displayMaxYr, cmpYear, "tt-ridership", null, null, false,
                "#9b9fbc", "total rides", fmtRides);
     }
-    return;
   } else {
     // Restore borough bars view
     boroTitle.textContent = "By borough — YTD";
@@ -1604,43 +1603,43 @@ function render() {
     boroListEl.style.display = "";
     ridershipCanvas.style.display = "none";
     document.getElementById("ridership-view-toggle").style.display = "none";
-  }
 
-  // Borough bars — use rate if boro rate toggle is on AND we're in citywide
-  const boroRateAvail = state.boroRateMode === "rate" && loc === "citywide";
-  const boroData=["Bronx","Brooklyn","Manhattan","Queens","Staten Island"]
-    .map(b=>{
-      const rawVal=getYTD(crime,loc,b,primaryYear,primaryQ);
-      let displayVal = rawVal;
-      if (boroRateAvail) {
-        const r = toRate(rawVal, loc, b, primaryYear, null, primaryQ);
-        displayVal = r == null ? null : r;
-      }
-      return {name:b, val:displayVal, rawVal, color:BORO_COLORS[b]};
-    })
-    .filter(b=>b.val!=null)
-    .sort((a,b)=>b.val-a.val);
-  const boroMax=Math.max(...boroData.map(b=>b.val),1);
-  const boroTotal=boroData.reduce((s,b)=>s+b.rawVal,0);
-  const boroSubLabel = boroRateAvail
-    ? `${crimeLabel} · ${primaryYear} · Q1–${primaryQ} · ${rateLabel(loc)}${locLabel2 ? " · "+locLabel2 : ""}`
-    : `${crimeLabel} · ${primaryYear} · Q1–${primaryQ}${locLabel2 ? " · "+locLabel2 : ""}`;
-  document.getElementById("boro-sub").textContent=boroSubLabel;
-  document.getElementById("boro-legend").innerHTML=boroData.map(b=>`
-    <span><span class="leg-dot" style="background:${b.color}"></span>${b.name}</span>`).join("");
-  document.getElementById("boro-list").innerHTML=boroData.map(b=>{
-    const pct=boroTotal>0?((b.rawVal/boroTotal)*100).toFixed(1):"0.0";
-    const w=boroMax>0?(b.val/boroMax*100).toFixed(1):"0";
-    const displayStr = boroRateAvail ? fmtRate(b.val, loc) : fmt(b.val);
-    const suffix = boroRateAvail ? "" : ` <span style="opacity:0.7;">(${pct}%)</span>`;
-    return `<div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
-        <span style="font-weight:600;">${b.name}</span>
-        <span style="color:var(--text2);">${displayStr}${suffix}</span>
-      </div>
-      <div class="boro-bar-bg"><div class="boro-bar-fill" style="width:${w}%;background:${b.color};"></div></div>
-    </div>`;
-  }).join("");
+    // Borough bars — use rate if boro rate toggle is on AND we're in citywide
+    const boroRateAvail = state.boroRateMode === "rate" && loc === "citywide";
+    const boroData=["Bronx","Brooklyn","Manhattan","Queens","Staten Island"]
+      .map(b=>{
+        const rawVal=getYTD(crime,loc,b,primaryYear,primaryQ);
+        let displayVal = rawVal;
+        if (boroRateAvail) {
+          const r = toRate(rawVal, loc, b, primaryYear, null, primaryQ);
+          displayVal = r == null ? null : r;
+        }
+        return {name:b, val:displayVal, rawVal, color:BORO_COLORS[b]};
+      })
+      .filter(b=>b.val!=null)
+      .sort((a,b)=>b.val-a.val);
+    const boroMax=Math.max(...boroData.map(b=>b.val),1);
+    const boroTotal=boroData.reduce((s,b)=>s+b.rawVal,0);
+    const boroSubLabel = boroRateAvail
+      ? `${crimeLabel} · ${primaryYear} · Q1–${primaryQ} · ${rateLabel(loc)}${locLabel2 ? " · "+locLabel2 : ""}`
+      : `${crimeLabel} · ${primaryYear} · Q1–${primaryQ}${locLabel2 ? " · "+locLabel2 : ""}`;
+    document.getElementById("boro-sub").textContent=boroSubLabel;
+    document.getElementById("boro-legend").innerHTML=boroData.map(b=>`
+      <span><span class="leg-dot" style="background:${b.color}"></span>${b.name}</span>`).join("");
+    document.getElementById("boro-list").innerHTML=boroData.map(b=>{
+      const pct=boroTotal>0?((b.rawVal/boroTotal)*100).toFixed(1):"0.0";
+      const w=boroMax>0?(b.val/boroMax*100).toFixed(1):"0";
+      const displayStr = boroRateAvail ? fmtRate(b.val, loc) : fmt(b.val);
+      const suffix = boroRateAvail ? "" : ` <span style="opacity:0.7;">(${pct}%)</span>`;
+      return `<div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+          <span style="font-weight:600;">${b.name}</span>
+          <span style="color:var(--text2);">${displayStr}${suffix}</span>
+        </div>
+        <div class="boro-bar-bg"><div class="boro-bar-fill" style="width:${w}%;background:${b.color};"></div></div>
+      </div>`;
+    }).join("");
+  }
 
   // Quarter comparison — always show all 4, gray out unavailable
   // Geography label used across all chart subtitles
