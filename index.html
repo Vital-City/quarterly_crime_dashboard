@@ -1022,6 +1022,16 @@ function buildApp() {
         </div>
       </div>
     </div>
+    <div id="precinct-banner" style="display:none;background:#050507;color:#ffffff;padding:12px 20px;margin-bottom:1rem;align-items:center;justify-content:space-between;gap:16px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-family:var(--font-primary);font-weight:700;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#ff7c53;">Viewing precinct</span>
+        <span id="precinct-banner-label" style="font-family:var(--font-display);font-weight:500;font-size:18px;"></span>
+        <span style="font-size:12px;color:rgba(255,255,255,0.7);">All charts and numbers below reflect this precinct only</span>
+      </div>
+      <button id="clear-precinct-btn" style="background:transparent;color:#ffffff;border:1px solid rgba(255,255,255,0.4);padding:6px 14px;font-family:var(--font-primary);font-weight:700;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">
+        × Clear · Show all
+      </button>
+    </div>
     <div class="metrics" id="metrics-row"></div>
     <div class="two-col-equal">
       <div class="chart-section">
@@ -1156,6 +1166,12 @@ function buildApp() {
         <div id="map-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text2);">Loading map…</div>
         <canvas id="map-canvas" style="width:100%;height:100%;display:block;"></canvas>
         <div id="map-tooltip" style="display:none;position:absolute;z-index:100;pointer-events:none;background:#ffffff;color:#050507;padding:12px 16px;font-size:12px;font-family:var(--font-primary);font-weight:300;line-height:1.55;border:1px solid #ebebeb;box-shadow:0 2px 8px rgba(5,5,7,0.12);max-width:260px;"></div>
+        <button id="clear-precinct-map-btn" style="display:none;position:absolute;top:12px;right:12px;z-index:50;background:#050507;color:#ffffff;border:none;padding:8px 14px;font-family:var(--font-primary);font-weight:700;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+          × Clear precinct
+        </button>
+        <div id="map-hint" style="position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,0.95);border:1px solid #ebebeb;padding:6px 10px;font-size:11px;color:var(--text2);pointer-events:none;">
+          <strong style="color:var(--text);">Click a precinct</strong> to filter all charts above
+        </div>
       </div>
       <div id="map-rate-note" style="display:none;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.5;">
         <strong style="color:var(--text);font-weight:700;">Note:</strong> Precincts 14 (Midtown South), 18 (Midtown North), and 22 (Central Park) are grayed out in rate view. Their resident populations are too small to produce meaningful per-capita rates — daytime populations from commuters and tourists far exceed the number of people who live there.
@@ -1195,6 +1211,24 @@ function buildApp() {
     state.precinct = e.target.value ? parseInt(e.target.value) : null;
     render();
   });
+  document.getElementById("clear-precinct-btn").addEventListener("click", () => {
+    state.precinct = null;
+    const pctSel = document.getElementById("sel-precinct");
+    if (pctSel) pctSel.value = "";
+    render();
+    document.getElementById("metrics-row").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  // Also wire the on-map clear button
+  const mapClearBtn = document.getElementById("clear-precinct-map-btn");
+  if (mapClearBtn) {
+    mapClearBtn.addEventListener("click", () => {
+      state.precinct = null;
+      const pctSel = document.getElementById("sel-precinct");
+      if (pctSel) pctSel.value = "";
+      render();
+      document.getElementById("metrics-row").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
   document.getElementById("sel-primary").addEventListener("change", e=>{
     state.primaryYear=String(e.target.value);
     // Update cmp options to exclude primary year
@@ -1374,6 +1408,23 @@ function render() {
   // Precinct mode — override data access functions when a precinct is selected
   const pct = state.precinct;
   const inPctMode = !!(pct);
+
+  // Show/hide "Viewing precinct" banner
+  const pctBanner = document.getElementById("precinct-banner");
+  const pctBannerLabel = document.getElementById("precinct-banner-label");
+  if (pctBanner) {
+    if (inPctMode) {
+      pctBanner.style.display = "flex";
+      if (pctBannerLabel) pctBannerLabel.textContent = pctLabel(pct);
+    } else {
+      pctBanner.style.display = "none";
+    }
+  }
+  // Show clear button and hide hint on map when a precinct is selected
+  const mapClearBtn2 = document.getElementById("clear-precinct-map-btn");
+  const mapHint = document.getElementById("map-hint");
+  if (mapClearBtn2) mapClearBtn2.style.display = inPctMode ? "block" : "none";
+  if (mapHint) mapHint.style.display = inPctMode ? "none" : "block";
 
   // isRate must be defined before geo labels (locLabel2 depends on it)
   const isRate = state.subwayRate;
