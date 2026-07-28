@@ -270,12 +270,15 @@ select:focus { outline: 2px solid var(--orange); outline-offset: 0; }
 
 
 
+.chart-sub {
+  display: none;
+}
 .chart-crime {
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: 22px;
+  font-size: 16px;
   color: #217ebe;
-  line-height: 1.15;
+  line-height: 1.2;
   margin-bottom: 8px;
 }
 
@@ -1082,6 +1085,7 @@ function buildApp() {
         <div class="chart-rule"></div>
         <div class="chart-location" id="qtr-location"></div>
         <div class="chart-crime" id="qtr-crime"></div>
+        <div class="chart-sub" id="qtr-sub"></div>
         <div class="legend" id="qtr-legend"></div>
         <div style="position:relative;">
           <canvas id="chart-qtr" style="width:100%;height:200px;display:block;"></canvas>
@@ -1092,6 +1096,7 @@ function buildApp() {
       <div class="chart-section">
         <div class="chart-rule"></div>
         <div class="chart-location" id="trend-location"></div>
+        <div class="chart-sub" id="trend-sub"></div>
         <div style="margin-bottom:10px;">
           <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px;gap:10px;">
             <div class="chart-crime" id="trend-crime" style="min-width:0;margin-bottom:0;"></div>
@@ -1123,6 +1128,7 @@ function buildApp() {
         <div class="chart-rule"></div>
         <div class="chart-location" id="monthly-location"></div>
         <div class="chart-crime" id="monthly-crime"></div>
+        <div class="chart-sub" id="monthly-sub"></div>
         <div class="legend" id="monthly-legend"></div>
         <div style="position:relative;">
           <canvas id="chart-monthly" style="width:100%;height:220px;display:block;"></canvas>
