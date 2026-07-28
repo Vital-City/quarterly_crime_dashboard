@@ -887,7 +887,7 @@ function deltaDisplay(curr, prev, cmpYr) {
 
 // ── State ────────────────────────────────────────────────────────────────────
 let DATA=null, META=null, PCT_DATA={}, PCT_POP={}, MONTHLY_DATA={}, PCT_MONTHLY_DATA={};
-let state = { crime:null, loc:"citywide", borough:"All boroughs", precinct:null, cmpYear:null, primaryYear:null, trendMode:"ytd", trendWindow:"all", subwayRate:false, boroRateMode:"count", mapMetric:"pct", mapView:"count", mapPeriod:"ytd", moversMode:"pct" };
+let state = { crime:null, loc:"citywide", borough:"All boroughs", precinct:null, cmpYear:null, primaryYear:null, trendMode:"ytd", trendWindow:"all", subwayRate:false, boroRateMode:"count", mapMetric:"pct", mapView:"count", mapPeriod:"ytd", moversMode:"pct", ridershipView:"monthly" };
 
 function getCount(crime,loc,boro,year,q) {
   try { const v=DATA[crime]?.[loc]?.[boro]?.[String(year)]?.[q]; return v?parseInt(v):0; } catch{return 0;}
@@ -1074,17 +1074,24 @@ function buildApp() {
         </div>
       </div>
       <div class="chart-section">
-        <div class="chart-rule"></div>
+        <div class="chart-rule" id="boro-rule"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <div class="chart-title">By borough — YTD</div>
+          <div class="chart-title" id="boro-chart-title">By borough — YTD</div>
           <div class="toggle-group" id="boro-rate-toggle" style="height:24px;">
             <button data-bororate="count" class="active" style="font-size:10px;padding:0 8px;">Count</button>
             <button data-bororate="rate" style="font-size:10px;padding:0 8px;">Rate</button>
+          </div>
+          <div class="toggle-group" id="ridership-view-toggle" style="height:24px;display:none;">
+            <button data-rview="monthly" class="active" style="font-size:10px;padding:0 8px;">Monthly</button>
+            <button data-rview="ytd" style="font-size:10px;padding:0 8px;">YTD</button>
+            <button data-rview="annual" style="font-size:10px;padding:0 8px;">Annual</button>
           </div>
         </div>
         <div class="chart-sub" id="boro-sub"></div>
         <div class="legend" id="boro-legend"></div>
         <div class="boro-list" id="boro-list"></div>
+        <canvas id="chart-ridership" style="display:none;width:100%;height:200px;"></canvas>
+        <div class="tooltip" id="tt-ridership"></div>
       </div>
     </div>
     <div class="movers-section" id="movers-section">
@@ -1264,6 +1271,11 @@ function buildApp() {
     document.querySelectorAll("#map-period-toggle button").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active"); state.mapPeriod=btn.dataset.mapperiod; render();
   });
+  document.getElementById("ridership-view-toggle").addEventListener("click", e=>{
+    const btn=e.target.closest("button"); if(!btn) return;
+    document.querySelectorAll("#ridership-view-toggle button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active"); state.ridershipView=btn.dataset.rview; render();
+  });
 
 
   state.crime       = META.crime_groups[0];
@@ -1276,6 +1288,7 @@ function buildApp() {
   state.mapMetric = "pct";
   state.mapView   = "count";
   state.mapPeriod = "ytd";
+  state.ridershipView = "monthly";
   document.getElementById("sel-crime").value   = state.crime;
   document.getElementById("sel-primary").value = state.primaryYear;
   updatePrecinctDropdown();
@@ -1507,8 +1520,105 @@ function render() {
     {label:String(primaryYear), data:monthly(primaryYear, primaryQ), color:C_CUR},
   ], "tt-monthly");
 
-  // Borough bars — hide in precinct mode
+  // Borough bars vs Ridership chart — swap based on location
   const boroSection = document.querySelector(".two-col");
+  const boroTitle    = document.getElementById("boro-chart-title");
+  const boroLegendEl = document.getElementById("boro-legend");
+  const boroListEl   = document.getElementById("boro-list");
+  const boroToggleEl = document.getElementById("boro-rate-toggle");
+  const ridershipCanvas = document.getElementById("chart-ridership");
+
+  if (loc === "subway") {
+    // Show subway ridership chart, hide borough bars
+    const rView = state.ridershipView || "monthly";
+    const viewTitle = rView === "ytd" ? "YTD" : rView === "annual" ? "annual" : "monthly";
+    boroTitle.textContent = `Subway ridership — ${viewTitle}`;
+    boroToggleEl.style.display = "none";
+    boroLegendEl.style.display = "block";
+    boroListEl.style.display = "none";
+    document.getElementById("ridership-view-toggle").style.display = "";
+    ridershipCanvas.style.display = "block";
+
+    if (rView === "monthly") {
+      // Bar chart: primary year vs comparison year, month by month
+      const rLabels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      let rCur = rLabels.map((_,i) => (getSubwayRidershipMonth(primaryYear, i+1) || 0) / 1000000);
+      let rCmp = rLabels.map((_,i) => (getSubwayRidershipMonth(cmpYear, i+1) || 0) / 1000000);
+      document.getElementById("boro-sub").textContent =
+        `Millions of rides · ${primaryYear} vs ${cmpYear}`;
+      document.getElementById("boro-legend").innerHTML = `
+        <span><span class="leg-dot" style="background:#dddddd"></span>${cmpYear}</span>
+        <span><span class="leg-dot" style="background:#9b9fbc"></span>${primaryYear}</span>`;
+      drawBars("chart-ridership", rLabels, [
+        {label: String(cmpYear),     data: rCmp, color: "#dddddd"},
+        {label: String(primaryYear), data: rCur, color: "#9b9fbc"},
+      ], "tt-ridership");
+    } else if (rView === "ytd") {
+      // Line chart: YTD (Q1-through-primaryQ) ridership by year, since 2006
+      const trendWindow = state.trendWindow || "all";
+      const dataYears = getAllYears();
+      const maxYr = parseInt(primaryYear);
+      const windowStart = trendWindow === "10yr"       ? maxYr - 9
+                        : trendWindow === "prepandemic" ? 2019
+                        : trendWindow === "5yr"         ? maxYr - 4
+                        : 2006;
+      const minYr = Math.max(windowStart, Math.min(...dataYears, 2006));
+      const allYrs = [];
+      for (let y = minYr; y <= maxYr; y++) allYrs.push(y);
+      const rData = allYrs.map(y => {
+        const quarters = ["Q1","Q2","Q3","Q4"];
+        const upToIdx = quarters.indexOf(primaryQ);
+        let total = 0;
+        for (let i = 0; i <= upToIdx; i++) {
+          total += getSubwayRidership(y, quarters[i]) || 0;
+        }
+        return total / 1000000;
+      });
+      document.getElementById("boro-sub").textContent =
+        `Millions of rides · YTD Q1–${primaryQ} · ${minYr}–${maxYr}`;
+      document.getElementById("boro-legend").innerHTML = "";
+      drawLine("chart-ridership", allYrs.map(String), rData,
+               primaryYear, cmpYear, "tt-ridership", null, null, false,
+               "#9b9fbc");
+    } else {
+      // Annual
+      const trendWindow = state.trendWindow || "all";
+      const dataYears = getAllYears();
+      const maxYr = parseInt(primaryYear);
+      const windowStart = trendWindow === "10yr"       ? maxYr - 9
+                        : trendWindow === "prepandemic" ? 2019
+                        : trendWindow === "5yr"         ? maxYr - 4
+                        : 2006;
+      const minYr = Math.max(windowStart, Math.min(...dataYears, 2006));
+      const allYrs = [];
+      for (let y = minYr; y <= maxYr; y++) allYrs.push(y);
+      const rData = allYrs.map(y => {
+        const quarters = ["Q1","Q2","Q3","Q4"];
+        let total = 0;
+        for (const q of quarters) total += getSubwayRidership(y, q) || 0;
+        return total / 1000000;
+      });
+      // Mark current year as incomplete if not through Q4
+      const incomplete = String(primaryYear) === String(latestYear) && primaryQ !== "Q4"
+        ? allYrs.indexOf(maxYr) : null;
+      document.getElementById("boro-sub").textContent =
+        `Millions of rides · Annual · ${minYr}–${maxYr}${incomplete !== null ? " (current year partial)" : ""}`;
+      document.getElementById("boro-legend").innerHTML = "";
+      drawLine("chart-ridership", allYrs.map(String), rData,
+               primaryYear, cmpYear, "tt-ridership", null, incomplete, false,
+               "#9b9fbc");
+    }
+    return;
+  } else {
+    // Restore borough bars view
+    boroTitle.textContent = "By borough — YTD";
+    boroToggleEl.style.display = "";
+    boroLegendEl.style.display = "";
+    boroListEl.style.display = "";
+    ridershipCanvas.style.display = "none";
+    document.getElementById("ridership-view-toggle").style.display = "none";
+  }
+
   // Borough bars — use rate if boro rate toggle is on AND we're in citywide
   const boroRateAvail = state.boroRateMode === "rate" && loc === "citywide";
   const boroData=["Bronx","Brooklyn","Manhattan","Queens","Staten Island"]
@@ -1799,7 +1909,7 @@ function drawBars(id, labels, datasets, ttId) {
   canvas.onmouseleave = () => { paint(-1); hideTooltip(ttId); };
 }
 
-function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplete, rateMode) {
+function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplete, rateMode, lineColor) {
   // xOverride: array of display labels for x-axis (sparse, empty string = skip)
   // incomplete: array of booleans — true = this point is partial data
   const {ctx, W, H} = getCanvas(id, 200);
@@ -1858,7 +1968,7 @@ function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplet
     ctx.clip();
 
     // Solid segment of line (complete data)
-    ctx.beginPath(); ctx.strokeStyle=C_TREND; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.strokeStyle=lineColor||C_TREND; ctx.lineWidth=2;
     let started=false;
     data.forEach((v,i)=>{
       if(incomplete&&incomplete[i]){ if(started){ctx.stroke(); started=false;} return; }
@@ -1868,7 +1978,7 @@ function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplet
     if(started) ctx.stroke();
     // Dashed segment for incomplete data
     if(incomplete&&incomplete.some(Boolean)){
-      ctx.beginPath(); ctx.strokeStyle=C_TREND; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.strokeStyle=lineColor||C_TREND; ctx.lineWidth=2;
       ctx.setLineDash([4,4]);
       let inSeg=false;
       // Connect last complete point to first incomplete
@@ -2028,6 +2138,7 @@ function renderMap(crimeLabel, curQ, latestYear) {
     btn.style.opacity = unavail ? "0.35" : "";
     if (unavail && state.mapPeriod === p) {
       state.mapPeriod = "ytd";
+  state.ridershipView = "monthly";
       document.querySelectorAll("#map-period-toggle button").forEach(b =>
         b.classList.toggle("active", b.dataset.mapperiod === "ytd"));
     }
