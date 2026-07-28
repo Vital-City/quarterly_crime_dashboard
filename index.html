@@ -1471,7 +1471,7 @@ function render() {
     else boroText = "CITYWIDE";
     let pctText = "";
     if (inPctMode) {
-      const pctName = (typeof PCT_NAMES !== "undefined" && PCT_NAMES[pct]) ? PCT_NAMES[pct] : "";
+      const pctName = PRECINCT_NAMES[pct] || "";
       pctText = ` <span class="pct-tag">· PCT. ${pct}${pctName ? ' · ' + pctName.toUpperCase() : ''}</span>`;
     }
     return boroText + pctText;
@@ -1569,7 +1569,7 @@ function render() {
   const allMetrics = [ytdMetric, ...qtrMetrics];
   // Build a location tag shown at the top of each metric card
   const locationTag = inPctMode
-    ? `Pct. ${pct}${PCT_NAMES[pct] ? ` · ${PCT_NAMES[pct]}` : ''}`
+    ? `Pct. ${pct}${PRECINCT_NAMES[pct] ? ` · ${PRECINCT_NAMES[pct]}` : ''}`
     : boro !== "All boroughs" ? boro
     : loc === "subway" ? "Subway"
     : loc === "housing" ? "Public housing"
