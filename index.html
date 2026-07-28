@@ -1075,16 +1075,16 @@ function buildApp() {
       </div>
       <div class="chart-section">
         <div class="chart-rule" id="boro-rule"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <div class="chart-title" id="boro-chart-title">By borough — YTD</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:12px;">
+          <div class="chart-title" id="boro-chart-title" style="min-width:0;overflow:hidden;text-overflow:ellipsis;">By borough — YTD</div>
           <div class="toggle-group" id="boro-rate-toggle" style="height:24px;">
             <button data-bororate="count" class="active" style="font-size:10px;padding:0 8px;">Count</button>
             <button data-bororate="rate" style="font-size:10px;padding:0 8px;">Rate</button>
           </div>
-          <div class="toggle-group" id="ridership-view-toggle" style="height:24px;display:none;">
-            <button data-rview="monthly" class="active" style="font-size:10px;padding:0 8px;">Monthly</button>
-            <button data-rview="ytd" style="font-size:10px;padding:0 8px;">YTD</button>
-            <button data-rview="annual" style="font-size:10px;padding:0 8px;">Annual</button>
+          <div class="toggle-group" id="ridership-view-toggle" style="height:24px;display:none;flex-shrink:0;">
+            <button data-rview="monthly" class="active" style="font-size:10px;padding:0 8px;white-space:nowrap;">Monthly</button>
+            <button data-rview="ytd" style="font-size:10px;padding:0 8px;white-space:nowrap;">YTD</button>
+            <button data-rview="annual" style="font-size:10px;padding:0 8px;white-space:nowrap;">Annual</button>
           </div>
         </div>
         <div class="chart-sub" id="boro-sub"></div>
@@ -1566,7 +1566,10 @@ function render() {
       const allYrs = [];
       for (let y = minYr; y <= maxYr; y++) allYrs.push(y);
       const isYtd = rView === "ytd";
-      const rData = allYrs.map(y => {
+      // For annual, exclude current year if it's not complete (not through Q4)
+      const excludeCurrentYear = !isYtd && String(primaryYear) === String(latestYear) && primaryQ !== "Q4";
+      const displayYrs = excludeCurrentYear ? allYrs.filter(y => y < maxYr) : allYrs;
+      const rData = displayYrs.map(y => {
         const quarters = ["Q1","Q2","Q3","Q4"];
         const upToIdx = isYtd ? quarters.indexOf(primaryQ) : 3;
         let total = 0;
@@ -1582,15 +1585,14 @@ function render() {
         if (v >= 1000)  return Math.round(v/1000) + "K";
         return String(Math.round(v));
       };
-      const incomplete = !isYtd && String(primaryYear) === String(latestYear) && primaryQ !== "Q4"
-        ? allYrs.indexOf(maxYr) : null;
+      const displayMaxYr = displayYrs[displayYrs.length - 1];
       const subLabel = isYtd
         ? `Total rides · YTD Q1–${primaryQ} · ${minYr}–${maxYr}`
-        : `Total rides · Annual · ${minYr}–${maxYr}${incomplete !== null ? " (current year partial)" : ""}`;
+        : `Total rides · Annual · ${minYr}–${displayMaxYr}${excludeCurrentYear ? ` (${maxYr} excluded — year in progress)` : ""}`;
       document.getElementById("boro-sub").textContent = subLabel;
       document.getElementById("boro-legend").innerHTML = "";
-      drawLine("chart-ridership", allYrs.map(String), rData,
-               primaryYear, cmpYear, "tt-ridership", null, incomplete, false,
+      drawLine("chart-ridership", displayYrs.map(String), rData,
+               isYtd ? primaryYear : displayMaxYr, cmpYear, "tt-ridership", null, null, false,
                "#9b9fbc", "total rides", fmtRides);
     }
     return;
