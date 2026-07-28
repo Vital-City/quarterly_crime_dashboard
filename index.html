@@ -199,6 +199,9 @@ select:focus { outline: 2px solid var(--orange); outline-offset: 0; }
 .metric {
   padding: 1.25rem 1.25rem 1rem;
   border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 .metric:last-child { border-right: none; }
 .metric.ytd-metric {
@@ -206,6 +209,7 @@ select:focus { outline: 2px solid var(--orange); outline-offset: 0; }
   border-left: 4px solid var(--yellow);
   padding-left: calc(1.25rem - 4px);
   color: #ffffff;
+  justify-content: flex-start;
 }
 .metric.ytd-metric .m-val { color: #ffffff; }
 .metric.ytd-metric .chart-location { color: #ffffff; }
@@ -1091,6 +1095,9 @@ function buildApp() {
           <div class="year-ctrl-label">Comparing to</div>
           <select id="sel-cmp" class="year-select">${cmpOpts}</select>
         </div>
+        <button id="reset-all-btn" style="margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--charcoal);font-family:var(--font-primary);font-weight:700;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;padding:8px 14px;white-space:nowrap;align-self:center;">
+          ↺ Reset filters
+        </button>
       </div>
     </div>
     <div class="metrics" id="metrics-row"></div>
@@ -1316,6 +1323,48 @@ function buildApp() {
     render();
   });
   document.getElementById("sel-cmp").addEventListener("change", e=>{state.cmpYear=String(e.target.value);render();});
+
+  // Reset filters button — return everything to defaults
+  document.getElementById("reset-all-btn").addEventListener("click", () => {
+    state.crime = META.crime_groups[0];
+    state.loc = "citywide";
+    state.borough = "All boroughs";
+    state.precinct = null;
+    state.primaryYear = String(META.current_year);
+    state.cmpYear = String(META.current_year - 1);
+    state.trendMode = "ytd";
+    state.trendWindow = "all";
+    state.subwayRate = false;
+    state.boroRateMode = "count";
+    state.mapMetric = "pct";
+    state.mapView = "count";
+    state.mapPeriod = "ytd";
+    state.moversMode = "pct";
+    state.ridershipView = "monthly";
+    // Sync all dropdowns and toggles
+    document.getElementById("sel-crime").value = state.crime;
+    document.getElementById("sel-borough").value = state.borough;
+    document.getElementById("sel-primary").value = state.primaryYear;
+    document.getElementById("sel-cmp").value = state.cmpYear;
+    updatePrecinctDropdown();
+    document.getElementById("sel-precinct").value = "";
+    // Reset all active toggles
+    document.querySelectorAll("#loc-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.loc==="citywide"));
+    document.querySelectorAll("#subway-rate-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.subrate==="count"));
+    document.querySelectorAll("#boro-rate-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.bororate==="count"));
+    document.querySelectorAll("#trend-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.trend==="ytd"));
+    document.querySelectorAll("#trend-window-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.window==="all"));
+    document.querySelectorAll("#map-metric-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.mapmetric==="pct"));
+    document.querySelectorAll("#map-view-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.mapview==="count"));
+    document.querySelectorAll("#map-period-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.mapperiod==="ytd"));
+    document.querySelectorAll("#movers-mode-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.moversmode==="pct"));
+    document.querySelectorAll("#ridership-view-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.rview==="monthly"));
+    const subwayRow = document.getElementById("subway-rate-row");
+    if (subwayRow) subwayRow.style.display = "none";
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
   document.getElementById("loc-toggle").addEventListener("click", e=>{
     const btn=e.target.closest("button"); if(!btn) return;
     document.querySelectorAll("#loc-toggle button").forEach(b=>b.classList.remove("active"));
