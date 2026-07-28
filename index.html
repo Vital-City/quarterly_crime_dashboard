@@ -202,9 +202,22 @@ select:focus { outline: 2px solid var(--orange); outline-offset: 0; }
 }
 .metric:last-child { border-right: none; }
 .metric.ytd-metric {
-  background: #fafafa;
+  background: #050507;
   border-left: 4px solid var(--yellow);
   padding-left: calc(1.25rem - 4px);
+  color: #ffffff;
+}
+.metric.ytd-metric .m-val { color: #ffffff; }
+.metric.ytd-metric .chart-location { color: #ffffff; }
+.metric.ytd-metric .chart-location .pct-tag { color: var(--yellow); }
+.metric.ytd-metric .m-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin-bottom: 8px;
+  line-height: 1;
 }
 .m-label {
   font-family: var(--font-primary);
@@ -235,6 +248,7 @@ select:focus { outline: 2px solid var(--orange); outline-offset: 0; }
 .delta-up   { color: #d2232a; } /* Baddest Red — crime going up is bad */
 .delta-down { color: #57aa4a; } /* Goodest Green — crime going down is good */
 .delta-flat { color: var(--text3); }
+.ytd-metric .delta-flat { color: rgba(255,255,255,0.6); }
 
 /* ── Chart sections ── */
 .chart-section { margin-bottom: 3rem; min-width: 0; overflow: hidden; }
@@ -1604,13 +1618,21 @@ function render() {
   const locationTagColor = (inPctMode || boro !== "All boroughs" || loc !== "citywide") ? "var(--orange)" : "var(--charcoal)";
   // Use same location HTML format as chart location tags (uppercase caps)
   const ytdLocationHTML = chartLocationHTML();
-  document.getElementById("metrics-row").innerHTML = allMetrics.map(m=>`
-    <div class="metric${m.isYTD?" ytd-metric":""}">
-      ${m.isYTD ? `<div class="chart-location" style="margin-bottom:6px;">${ytdLocationHTML}</div>` : ''}
+  document.getElementById("metrics-row").innerHTML = allMetrics.map(m=>{
+    if (m.isYTD) {
+      return `<div class="metric ytd-metric">
+        <div class="chart-location" style="margin-bottom:8px;">${ytdLocationHTML}</div>
+        <div class="m-title">YTD</div>
+        <div class="m-val">${m.val}</div>
+        <div class="m-delta ${m.delta.cls}">${m.delta.text}</div>
+      </div>`;
+    }
+    return `<div class="metric">
       <div class="m-label">${m.label}</div>
       <div class="m-val">${m.val}</div>
       <div class="m-delta ${m.delta.cls}">${m.delta.text}</div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 
   // Monthly bars
   const maxMonth=(primaryQIdx+1)*3;
