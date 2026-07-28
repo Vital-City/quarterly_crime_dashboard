@@ -237,7 +237,7 @@ select:focus { outline: 2px solid var(--orange); outline-offset: 0; }
 .delta-flat { color: var(--text3); }
 
 /* ── Chart sections ── */
-.chart-section { margin-bottom: 3rem; }
+.chart-section { margin-bottom: 3rem; min-width: 0; overflow: hidden; }
 .chart-title {
   font-family: var(--font-display);
   font-weight: 500;
@@ -1090,7 +1090,7 @@ function buildApp() {
         <div class="chart-sub" id="boro-sub"></div>
         <div class="legend" id="boro-legend"></div>
         <div class="boro-list" id="boro-list"></div>
-        <canvas id="chart-ridership" style="display:none;width:100%;height:200px;"></canvas>
+        <canvas id="chart-ridership" style="display:none;width:100%;max-width:100%;height:200px;box-sizing:border-box;"></canvas>
         <div class="tooltip" id="tt-ridership"></div>
       </div>
     </div>
@@ -1553,8 +1553,8 @@ function render() {
         {label: String(cmpYear),     data: rCmp, color: "#dddddd"},
         {label: String(primaryYear), data: rCur, color: "#9b9fbc"},
       ], "tt-ridership");
-    } else if (rView === "ytd") {
-      // Line chart: YTD (Q1-through-primaryQ) ridership by year, since 2006
+    } else {
+      // Line chart for YTD or Annual — keep values as raw rides, format with M/B
       const trendWindow = state.trendWindow || "all";
       const dataYears = getAllYears();
       const maxYr = parseInt(primaryYear);
@@ -1565,48 +1565,33 @@ function render() {
       const minYr = Math.max(windowStart, Math.min(...dataYears, 2006));
       const allYrs = [];
       for (let y = minYr; y <= maxYr; y++) allYrs.push(y);
+      const isYtd = rView === "ytd";
       const rData = allYrs.map(y => {
         const quarters = ["Q1","Q2","Q3","Q4"];
-        const upToIdx = quarters.indexOf(primaryQ);
+        const upToIdx = isYtd ? quarters.indexOf(primaryQ) : 3;
         let total = 0;
         for (let i = 0; i <= upToIdx; i++) {
           total += getSubwayRidership(y, quarters[i]) || 0;
         }
-        return total / 1000000;
+        return total;
       });
-      document.getElementById("boro-sub").textContent =
-        `Millions of rides · YTD Q1–${primaryQ} · ${minYr}–${maxYr}`;
-      document.getElementById("boro-legend").innerHTML = "";
-      drawLine("chart-ridership", allYrs.map(String), rData,
-               primaryYear, cmpYear, "tt-ridership", null, null, false,
-               "#9b9fbc");
-    } else {
-      // Annual
-      const trendWindow = state.trendWindow || "all";
-      const dataYears = getAllYears();
-      const maxYr = parseInt(primaryYear);
-      const windowStart = trendWindow === "10yr"       ? maxYr - 9
-                        : trendWindow === "prepandemic" ? 2019
-                        : trendWindow === "5yr"         ? maxYr - 4
-                        : 2006;
-      const minYr = Math.max(windowStart, Math.min(...dataYears, 2006));
-      const allYrs = [];
-      for (let y = minYr; y <= maxYr; y++) allYrs.push(y);
-      const rData = allYrs.map(y => {
-        const quarters = ["Q1","Q2","Q3","Q4"];
-        let total = 0;
-        for (const q of quarters) total += getSubwayRidership(y, q) || 0;
-        return total / 1000000;
-      });
-      // Mark current year as incomplete if not through Q4
-      const incomplete = String(primaryYear) === String(latestYear) && primaryQ !== "Q4"
+      // Formatter: 1.2B, 850M, etc.
+      const fmtRides = v => {
+        if (v >= 1e9)   return (v/1e9).toFixed(1) + "B";
+        if (v >= 1e6)   return Math.round(v/1e6) + "M";
+        if (v >= 1000)  return Math.round(v/1000) + "K";
+        return String(Math.round(v));
+      };
+      const incomplete = !isYtd && String(primaryYear) === String(latestYear) && primaryQ !== "Q4"
         ? allYrs.indexOf(maxYr) : null;
-      document.getElementById("boro-sub").textContent =
-        `Millions of rides · Annual · ${minYr}–${maxYr}${incomplete !== null ? " (current year partial)" : ""}`;
+      const subLabel = isYtd
+        ? `Total rides · YTD Q1–${primaryQ} · ${minYr}–${maxYr}`
+        : `Total rides · Annual · ${minYr}–${maxYr}${incomplete !== null ? " (current year partial)" : ""}`;
+      document.getElementById("boro-sub").textContent = subLabel;
       document.getElementById("boro-legend").innerHTML = "";
       drawLine("chart-ridership", allYrs.map(String), rData,
                primaryYear, cmpYear, "tt-ridership", null, incomplete, false,
-               "#9b9fbc");
+               "#9b9fbc", "total rides", fmtRides);
     }
     return;
   } else {
@@ -1816,7 +1801,17 @@ function drawBars(id, labels, datasets, ttId) {
     niceMax = Math.ceil(mx * 1.15 * 10) / 10 || 1;
   } else {
     barMin = 0;
-    niceMax = Math.ceil(mx * 1.12 / 1000) * 1000 || 1;
+    // Choose a "nice" step that divides evenly by 4 (so tick labels are clean)
+    // Pick step sizes based on magnitude, aiming for 4 ticks between 0 and niceMax
+    const roughMax = mx * 1.12;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(roughMax)));
+    const normalized = roughMax / magnitude; // 1-10 range
+    let stepMultiplier;
+    if (normalized <= 2) stepMultiplier = 0.5;
+    else if (normalized <= 5) stepMultiplier = 1;
+    else stepMultiplier = 2.5;
+    const stepSize = magnitude * stepMultiplier;
+    niceMax = Math.ceil(roughMax / stepSize) * stepSize || 1;
   }
   const TICKS=4;
   const n=labels.length, ds=datasets.length;
@@ -1909,7 +1904,7 @@ function drawBars(id, labels, datasets, ttId) {
   canvas.onmouseleave = () => { paint(-1); hideTooltip(ttId); };
 }
 
-function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplete, rateMode, lineColor) {
+function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplete, rateMode, lineColor, unitLabel, yFormatter) {
   // xOverride: array of display labels for x-axis (sparse, empty string = skip)
   // incomplete: array of booleans — true = this point is partial data
   const {ctx, W, H} = getCanvas(id, 200);
@@ -1952,7 +1947,7 @@ function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplet
       ctx.beginPath(); ctx.moveTo(PL,y); ctx.lineTo(PL+cW,y); ctx.stroke();
       ctx.fillStyle=C_LABEL; ctx.font="10px 'halyard-text','Inter','Helvetica Neue',Arial,sans-serif";
       ctx.textAlign="right";
-      const lbl = v < 100 ? v.toFixed(1) : fmtK(Math.round(v));
+      const lbl = yFormatter ? yFormatter(v) : (v < 100 ? v.toFixed(1) : fmtK(Math.round(v)));
       ctx.fillText(lbl, PL-5, y+3.5);
     }
     // Hover vertical line
@@ -2084,8 +2079,8 @@ function drawLine(id, labels, data, curYear, cmpYear, ttId, xOverride, incomplet
       showTooltip(ttId,canvas,mx,e.clientY-canvas.getBoundingClientRect().top,[
         `<strong>${lbl}${note}</strong>`,
         `<hr style="border:none;border-top:1px solid #ebebeb;margin:5px 0;">`,
-        `<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;"><span style="display:inline-block;width:10px;height:10px;background:${col};flex-shrink:0;"></span><span style="font-size:14px;font-weight:700;">${rateMode ? data[i].toFixed(1) : Math.round(data[i]).toLocaleString()}</span></div>`,
-        `<div style="color:#707175;font-size:11px;">${rateMode?"per million rides":"complaints"}</div>`
+        `<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;"><span style="display:inline-block;width:10px;height:10px;background:${col};flex-shrink:0;"></span><span style="font-size:14px;font-weight:700;">${yFormatter ? yFormatter(data[i]) : (rateMode ? data[i].toFixed(1) : Math.round(data[i]).toLocaleString())}</span></div>`,
+        `<div style="color:#707175;font-size:11px;">${unitLabel || (rateMode?"per million rides":"complaints")}</div>`
       ]);
     } else { paint(-1); hideTooltip(ttId); }
   };
