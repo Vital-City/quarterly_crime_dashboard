@@ -791,6 +791,32 @@ select.year-select:focus { outline: 2px solid var(--orange); }
   }
   select, select.year-select { background-color: #ffffff !important; border:1px solid #cfcfcd !important; }
 
+
+/* Mobile — long-term trend header fixes */
+@media (max-width: 640px) {
+  .chart-title {
+    font-size: 18px !important;
+    line-height: 1.15 !important;
+    word-break: break-word;
+  }
+  #trend-toggle { flex-shrink: 0 !important; }
+  #trend-toggle button { padding: 0 10px !important; font-size: 10px !important; }
+  #trend-window-toggle { flex-wrap: wrap; height: auto !important; }
+  #trend-window-toggle button {
+    flex: 1 1 45% !important;
+    padding: 6px 8px !important;
+    height: auto !important;
+    white-space: normal !important;
+    text-align: center;
+    line-height: 1.2;
+  }
+  /* Ensure header row wraps if too narrow */
+  .chart-section > div[style*="justify-content:space-between"][style*="align-items:flex-end"] {
+    flex-wrap: wrap;
+    gap: 8px !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1127,9 +1153,7 @@ function buildApp() {
           </div>
           <div class="toggle-group" id="trend-window-toggle" style="height:26px;width:100%;">
             <button data-window="all" class="active" style="font-size:10px;flex:1 1 auto;white-space:nowrap;padding:0 12px;">Since 2006</button>
-            <button data-window="10yr" style="font-size:10px;flex:1 1 auto;white-space:nowrap;padding:0 12px;">Last 10 years</button>
             <button data-window="prepandemic" style="font-size:10px;flex:1 1 auto;white-space:nowrap;padding:0 12px;">Prepandemic (2019)–present</button>
-            <button data-window="5yr" style="font-size:10px;flex:1 1 auto;white-space:nowrap;padding:0 12px;">Last 5 years</button>
           </div>
         </div>
         <div class="chart-location" id="trend-location"></div>
@@ -1815,15 +1839,19 @@ function render() {
   } else if (inPctMode) {
     // Precinct mode — show all precincts in the same borough ranked by current crime
     if (boroTitle) boroTitle.textContent = `Precincts in ${PCT_BOROUGH[pct] || boro}`;
-    boroToggleEl.style.display = "none";
+    // Show count/rate toggle only in citywide loc (rates need per-precinct population)
+    boroToggleEl.style.display = loc === "citywide" ? "" : "none";
     boroLegendEl.style.display = "none";
     boroListEl.style.display = "block";
-    // Cap height and enable scroll so the card stays compact
     boroListEl.style.maxHeight = "340px";
     boroListEl.style.overflowY = "auto";
     boroListEl.style.paddingRight = "6px";
     ridershipCanvas.style.display = "none";
     document.getElementById("ridership-view-toggle").style.display = "none";
+
+    // Precincts with very low residential population — exclude from rate view
+    const LOW_POP_PCTS = [14, 18, 22];  // Midtown South, Midtown North, Central Park
+    const pctRateMode = state.boroRateMode === "rate" && loc === "citywide";
 
     // Get all precincts in the same borough
     const pctBoro = PCT_BOROUGH[pct] || boro;
@@ -1832,35 +1860,57 @@ function render() {
       .map(p => parseInt(p))
       .filter(p => !isNaN(p));
 
-    // Compute count for each sibling precinct
+    // Compute count or rate for each sibling precinct
     const pctData = siblingPcts.map(p => {
       const rawVal = getPctYTD(crime, p, primaryYear, primaryQ, loc);
+      let displayVal = rawVal;
+      let ratePerCapUnavail = false;
+      if (pctRateMode) {
+        const pop = PCT_POP[String(p)];
+        if (pop && !LOW_POP_PCTS.includes(p)) {
+          displayVal = (rawVal / pop) * 100000;
+        } else {
+          displayVal = null;
+          ratePerCapUnavail = true;
+        }
+      }
       return {
         pct: p,
         name: PRECINCT_NAMES[p] || "",
-        val: rawVal,
+        val: displayVal,
+        rawVal: rawVal,
+        unavail: ratePerCapUnavail,
         isSelected: p === pct
       };
     })
-    .filter(p => p.val != null && p.val >= 0)
-    .sort((a, b) => b.val - a.val);
+    .filter(p => p.val != null || p.unavail)
+    .sort((a, b) => {
+      if (a.unavail && !b.unavail) return 1;
+      if (b.unavail && !a.unavail) return -1;
+      return (b.val || 0) - (a.val || 0);
+    });
 
-    const pctMax = Math.max(...pctData.map(p => p.val), 1);
-    document.getElementById("boro-sub").textContent =
-      `${crimeLabel} · ${primaryYear} · Q1–${primaryQ}`;
+    const validVals = pctData.filter(p => !p.unavail).map(p => p.val);
+    const pctMax = Math.max(...validVals, 1);
+    document.getElementById("boro-sub").textContent = pctRateMode
+      ? `${crimeLabel} · ${primaryYear} · Q1–${primaryQ} · ${rateLabel(loc)}`
+      : `${crimeLabel} · ${primaryYear} · Q1–${primaryQ}`;
 
     document.getElementById("boro-list").innerHTML = pctData.map(p => {
-      const w = pctMax > 0 ? (p.val / pctMax * 100).toFixed(1) : "0";
+      const w = (p.unavail || pctMax === 0) ? 0 : (p.val / pctMax * 100).toFixed(1);
       const barColor = p.isSelected ? "#ff7c53" : "#c8c8c8";
       const textWeight = p.isSelected ? "700" : "500";
-      const textColor = p.isSelected ? "#ff7c53" : "var(--text)";
+      const textColor = p.isSelected ? "#ff7c53" : (p.unavail ? "var(--text3)" : "var(--text)");
       const label = `Pct. ${p.pct}${p.name ? " · " + p.name : ""}`;
+      const valDisplay = p.unavail
+        ? `<span style="color:var(--text3);font-size:11px;font-style:italic;">rate unavailable</span>`
+        : (pctRateMode ? fmtRate(p.val, loc) : fmt(p.val));
       return `<div>
         <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
           <span style="font-weight:${textWeight};color:${textColor};">${label}${p.isSelected ? " ← selected" : ""}</span>
-          <span style="color:var(--text2);font-weight:${textWeight};">${fmt(p.val)}</span>
+          <span style="color:var(--text2);font-weight:${textWeight};">${valDisplay}</span>
         </div>
-        <div class="boro-bar-bg"><div class="boro-bar-fill" style="width:${w}%;background:${barColor};"></div></div>
+        <div class="boro-bar-bg"><div class="boro-bar-fill" style="width:${w}%;background:${p.unavail ? '#e8e8e8' : barColor};"></div></div>
       </div>`;
     }).join("");
   } else {
