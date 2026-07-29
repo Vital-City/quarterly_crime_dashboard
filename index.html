@@ -794,13 +794,20 @@ select.year-select:focus { outline: 2px solid var(--orange); }
 
 /* Mobile — long-term trend header fixes */
 @media (max-width: 640px) {
-  .chart-title {
-    font-size: 18px !important;
+  /* Force the trend header to stack: title on top, toggle below */
+  .chart-section > div[style*="margin-bottom:10px"] > div:first-child {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  .chart-section > div[style*="margin-bottom:10px"] > div:first-child > .chart-title {
+    min-width: 100% !important;
+    width: 100% !important;
+    font-size: 20px !important;
     line-height: 1.15 !important;
-    word-break: break-word;
   }
   #trend-toggle { flex-shrink: 0 !important; }
-  #trend-toggle button { padding: 0 10px !important; font-size: 10px !important; }
+  #trend-toggle button { padding: 0 12px !important; font-size: 11px !important; }
   #trend-window-toggle { flex-wrap: wrap; height: auto !important; }
   #trend-window-toggle button {
     flex: 1 1 45% !important;
@@ -809,11 +816,6 @@ select.year-select:focus { outline: 2px solid var(--orange); }
     white-space: normal !important;
     text-align: center;
     line-height: 1.2;
-  }
-  /* Ensure header row wraps if too narrow */
-  .chart-section > div[style*="justify-content:space-between"][style*="align-items:flex-end"] {
-    flex-wrap: wrap;
-    gap: 8px !important;
   }
 }
 
