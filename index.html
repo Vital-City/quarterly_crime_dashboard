@@ -1082,18 +1082,18 @@ function buildApp() {
       </div>
       <div class="ctrl">
         <label>Location</label>
-        <div style="display:flex;flex-direction:column;gap:4px;">
+        <div style="display:flex;flex-direction:column;gap:6px;">
           <div class="toggle-group" id="loc-toggle">
             <button data-loc="citywide" data-rate="count" class="active">Citywide</button>
             <button data-loc="subway" data-rate="count" id="btn-subway-count">Subway</button>
             <button data-loc="housing" data-rate="count">Housing</button>
           </div>
-          <div id="subway-rate-row" style="display:none;justify-content:flex-end;flex-direction:column;align-items:flex-end;">
+          <div id="subway-rate-row" style="visibility:hidden;display:flex;flex-direction:column;align-items:center;min-height:26px;">
             <div class="toggle-group" id="subway-rate-toggle" style="height:26px;">
               <button data-subrate="count" class="active" style="font-size:10px;padding:0 10px;">Count</button>
               <button data-subrate="rate" style="font-size:10px;padding:0 10px;">Rate</button>
             </div>
-            <div id="ridership-note" style="display:none;margin-top:6px;font-size:11px;color:var(--charcoal);line-height:1.4;font-style:italic;max-width:280px;text-align:right;"></div>
+            <div id="ridership-note" style="display:none;margin-top:6px;font-size:11px;color:var(--charcoal);line-height:1.4;font-style:italic;max-width:280px;text-align:center;"></div>
           </div>
         </div>
       </div>
@@ -1386,7 +1386,7 @@ function buildApp() {
     document.querySelectorAll("#movers-mode-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.moversmode==="pct"));
     document.querySelectorAll("#ridership-view-toggle button").forEach(b=>b.classList.toggle("active", b.dataset.rview==="monthly"));
     const subwayRow = document.getElementById("subway-rate-row");
-    if (subwayRow) subwayRow.style.display = "none";
+    if (subwayRow) subwayRow.style.visibility = "hidden";
     render();
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
@@ -1398,7 +1398,7 @@ function buildApp() {
     state.loc = btn.dataset.loc;
     // Show subway rate sub-toggle when subway is selected
     const subwayRow = document.getElementById("subway-rate-row");
-    if (subwayRow) subwayRow.style.display = state.loc === "subway" ? "flex" : "none";
+    if (subwayRow) subwayRow.style.visibility = state.loc === "subway" ? "visible" : "hidden";
     // If switching away from subway, clear subwayRate
     if (state.loc !== "subway") state.subwayRate = false;
     else {
