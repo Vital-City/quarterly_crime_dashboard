@@ -849,7 +849,7 @@ const PRECINCT_NAMES = {
   40:"Mott Haven", 41:"Longwood", 42:"Morrisania", 43:"Hunts Point",
   44:"Melrose", 45:"Tremont", 46:"East Tremont", 47:"Fordham",
   48:"Belmont/Fordham", 49:"Pelham Parkway", 50:"Riverdale",
-  52:"Kingsbridge", 53:"Wakefield", 61:"Seagate/Coney Island",
+  52:"Kingsbridge", 61:"Seagate/Coney Island",
   62:"Brighton Beach/Sheepshead Bay", 63:"Bay Ridge", 66:"Bensonhurst",
   67:"Crown Heights", 68:"Bay Ridge/Dyker Heights", 69:"Canarsie",
   60:"Coney Island/Sea Gate",
@@ -2522,6 +2522,8 @@ function renderMap(crimeLabel, curQ, latestYear) {
     // Compute bounds of all precincts
     let minLng=Infinity, maxLng=-Infinity, minLat=Infinity, maxLat=-Infinity;
     geo.features.forEach(f => {
+      const pctCheck = parseInt(f.properties.precinct || 0);
+      if (pctCheck === 53) return;  // Skip precinct 53 (consolidated)
       // MultiPolygon: coordinates = [polygon][ring][point]
       // Polygon: coordinates = [ring][point]
       const polys = f.geometry.type === "MultiPolygon"
@@ -2551,7 +2553,7 @@ function renderMap(crimeLabel, curQ, latestYear) {
     const pctChanges = {};
     geo.features.forEach(f => {
       const pct = parseInt(f.properties.precinct || 0);
-      if (!pct) return;
+      if (!pct || pct === 53) return;  // Pct 53 was consolidated into 47 — no active data
       // Use selected map period (YTD or specific quarter)
       let curRaw, prvRaw;
       if (mapPeriod === "ytd") {
@@ -2623,6 +2625,7 @@ function renderMap(crimeLabel, curQ, latestYear) {
     const featurePaths = [];
     geo.features.forEach(f => {
       const pct = parseInt(f.properties.precinct || 0);
+      if (pct === 53) return;  // Pct 53 was consolidated into 47 — no active data
       const change = pctChanges[pct];
       // Precincts with very low/no residential population — grey out for rate mode
       // 22 = Central Park, 14 = Midtown South, 18 = Midtown North
