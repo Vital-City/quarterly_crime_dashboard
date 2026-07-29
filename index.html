@@ -1812,6 +1812,53 @@ function render() {
                isYtd ? primaryYear : displayMaxYr, cmpYear, "tt-ridership", null, null, false,
                "#9b9fbc", "total rides", fmtRides);
     }
+  } else if (inPctMode) {
+    // Precinct mode — show all precincts in the same borough ranked by current crime
+    if (boroTitle) boroTitle.textContent = `Precincts in ${PCT_BOROUGH[pct] || boro}`;
+    boroToggleEl.style.display = "none";
+    boroLegendEl.style.display = "none";
+    boroListEl.style.display = "block";
+    ridershipCanvas.style.display = "none";
+    document.getElementById("ridership-view-toggle").style.display = "none";
+
+    // Get all precincts in the same borough
+    const pctBoro = PCT_BOROUGH[pct] || boro;
+    const siblingPcts = Object.keys(PCT_BOROUGH)
+      .filter(p => PCT_BOROUGH[p] === pctBoro)
+      .map(p => parseInt(p))
+      .filter(p => !isNaN(p));
+
+    // Compute count for each sibling precinct
+    const pctData = siblingPcts.map(p => {
+      const rawVal = getPctYTD(crime, p, primaryYear, primaryQ, loc);
+      return {
+        pct: p,
+        name: PRECINCT_NAMES[p] || "",
+        val: rawVal,
+        isSelected: p === pct
+      };
+    })
+    .filter(p => p.val != null && p.val >= 0)
+    .sort((a, b) => b.val - a.val);
+
+    const pctMax = Math.max(...pctData.map(p => p.val), 1);
+    document.getElementById("boro-sub").textContent =
+      `${crimeLabel} · ${primaryYear} · Q1–${primaryQ}`;
+
+    document.getElementById("boro-list").innerHTML = pctData.map(p => {
+      const w = pctMax > 0 ? (p.val / pctMax * 100).toFixed(1) : "0";
+      const barColor = p.isSelected ? "#ff7c53" : "#c8c8c8";
+      const textWeight = p.isSelected ? "700" : "500";
+      const textColor = p.isSelected ? "#ff7c53" : "var(--text)";
+      const label = `Pct. ${p.pct}${p.name ? " · " + p.name : ""}`;
+      return `<div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+          <span style="font-weight:${textWeight};color:${textColor};">${label}${p.isSelected ? " ← selected" : ""}</span>
+          <span style="color:var(--text2);font-weight:${textWeight};">${fmt(p.val)}</span>
+        </div>
+        <div class="boro-bar-bg"><div class="boro-bar-fill" style="width:${w}%;background:${barColor};"></div></div>
+      </div>`;
+    }).join("");
   } else {
     // Restore borough bars view
     if (boroTitle) boroTitle.textContent = "By borough — YTD";
