@@ -1818,6 +1818,10 @@ function render() {
     boroToggleEl.style.display = "none";
     boroLegendEl.style.display = "none";
     boroListEl.style.display = "block";
+    // Cap height and enable scroll so the card stays compact
+    boroListEl.style.maxHeight = "340px";
+    boroListEl.style.overflowY = "auto";
+    boroListEl.style.paddingRight = "6px";
     ridershipCanvas.style.display = "none";
     document.getElementById("ridership-view-toggle").style.display = "none";
 
@@ -1865,6 +1869,10 @@ function render() {
     boroToggleEl.style.display = "";
     boroLegendEl.style.display = "";
     boroListEl.style.display = "";
+    // Reset scroll styles set by precinct mode
+    boroListEl.style.maxHeight = "";
+    boroListEl.style.overflowY = "";
+    boroListEl.style.paddingRight = "";
     ridershipCanvas.style.display = "none";
     document.getElementById("ridership-view-toggle").style.display = "none";
 
