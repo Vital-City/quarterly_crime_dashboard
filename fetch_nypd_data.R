@@ -21,7 +21,7 @@ YTD_ENDPOINT      <- "https://data.cityofnewyork.us/resource/5uac-w243.json"
 # current_year    = the most recent year with data (e.g. 2025)
 # current_quarter = the most recent quarter available (1, 2, 3, or 4)
 current_year    <- 2026
-current_quarter <- 1
+current_quarter <- 2
 # ─────────────────────────────────────────────────────────────────────────────
 
 ytd_end_month <- current_quarter * 3
@@ -55,6 +55,8 @@ LAW_CAT_GROUPS <- c("All felonies", "All misdemeanors", "All violations")
 
 BOROUGH_MAP <- c(
   "PATROL BORO BRONX"         = "Bronx",
+  "PATROL BORO BRONX NORTH"   = "Bronx",
+  "PATROL BORO BRONX SOUTH"   = "Bronx",
   "PATROL BORO BKLYN NORTH"   = "Brooklyn",
   "PATROL BORO BKLYN SOUTH"   = "Brooklyn",
   "PATROL BORO MAN NORTH"     = "Manhattan",
@@ -434,6 +436,29 @@ if (!is.null(mta_resp) && !http_error(mta_resp)) {
     mta_data$mo  <- as.integer(substr(as.character(mta_data$month), 6, 7))
     mta_data$ridership <- as.numeric(mta_data$ridership)
     mta_data <- mta_data[!is.na(mta_data$yr) & !is.na(mta_data$ridership) & mta_data$yr >= 2018, ]
+
+    mta_data <- mta_data[order(mta_data$yr, mta_data$mo), ]
+    incomplete_months <- list()
+
+    # QUICK FIX: MTA dataset had incomplete June 2026 data — hardcode actual value
+    # TODO: remove this block once MTA publishes final June 2026 numbers via API
+    JUNE_2026_ACTUAL <- 113321651
+    june_idx <- which(mta_data$yr == 2026 & mta_data$mo == 6)
+    if (length(june_idx) == 1) {
+      cat(sprintf("  Overriding June 2026 ridership from %s to %s (verified actual)\n",
+                  format(round(mta_data$ridership[june_idx]), big.mark=","),
+                  format(JUNE_2026_ACTUAL, big.mark=",")))
+      mta_data$ridership[june_idx] <- JUNE_2026_ACTUAL
+    } else {
+      # If June 2026 not yet in the API response, add it manually
+      cat("  June 2026 not in API — adding manually\n")
+      new_row <- mta_data[1, ]
+      new_row$yr <- 2026; new_row$mo <- 6; new_row$ridership <- JUNE_2026_ACTUAL
+      new_row$month <- "2026-06-01T00:00:00.000"
+      mta_data <- rbind(mta_data, new_row)
+      mta_data <- mta_data[order(mta_data$yr, mta_data$mo), ]
+    }
+
     mta_data$quarter <- ifelse(mta_data$mo <= 3, "Q1",
                         ifelse(mta_data$mo <= 6, "Q2",
                         ifelse(mta_data$mo <= 9, "Q3", "Q4")))
@@ -445,14 +470,21 @@ if (!is.null(mta_resp) && !http_error(mta_resp)) {
       if (is.null(subway_ridership[[yr_key]])) subway_ridership[[yr_key]] <- list()
       subway_ridership[[yr_key]][[qt_key]] <- round(mta_qtr$ridership[i])
     }
-    # Store monthly ridership too — keyed by month number
+    # Store monthly ridership
     for (i in seq_len(nrow(mta_data))) {
       yr_key <- as.character(mta_data$yr[i])
       mo_key <- as.character(mta_data$mo[i])
       if (is.null(subway_ridership[[yr_key]])) subway_ridership[[yr_key]] <- list()
       subway_ridership[[yr_key]][[mo_key]] <- round(mta_data$ridership[i])
     }
-    cat(sprintf("  API ridership loaded for 2018-%d (quarterly + monthly)\n", max(mta_qtr$yr)))
+    # Store list of incomplete months for the dashboard to display a note
+    ridership_notes <- lapply(incomplete_months, function(x) {
+      list(year=x$yr, month=x$mo,
+           month_name=month.name[x$mo],
+           note=sprintf("%s %d ridership is not yet complete; using the prior month's value as a placeholder",
+                        month.name[x$mo], x$yr))
+    })
+    cat(sprintf("  API ridership loaded for 2018-%d (quarterly + monthly)\n", max(mta_data$yr)))
   }
 } else {
   cat("  WARNING: MTA API fetch failed — using pre-2018 data only\n")
@@ -651,6 +683,7 @@ output <- list(
   crime_types        = all_crime_types,
   crime_types_major  = major_in_list,
   crime_groups       = c("All crime", names(CRIME_GROUPS), LAW_CAT_GROUPS),
+  ridership_notes    = if (exists("ridership_notes")) ridership_notes else list(),
   subway_ridership   = subway_ridership,
   population         = NYC_POP,
   data               = data_out,
