@@ -1,28 +1,54 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # NYPD Crime Complaint Data Fetcher
-# Run this script each quarter to refresh crime_data.json.
-# From RStudio: open this file, paste your token below, click Source
 #
-# Requires: install.packages(c("httr", "jsonlite"))
+# HOW TO RUN THIS EACH QUARTER — READ THIS FIRST:
+#
+# STEP 1: DOWNLOAD THE MOST RECENT DATA FILES (CSVs)
+# ---------------------------------------------------
+# Go to NYC Open Data and download BOTH files as CSV. Save them to your
+# "Most recent complaints data" folder, overwriting the old ones.
+#
+#   Historic (2006-2025):
+#     https://data.cityofnewyork.us/Public-Safety/NYPD-Complaint-Data-Historic/qgea-i56i
+#     → Click "Export" → "CSV"
+#
+#   Current year to date (2026+):
+#     https://data.cityofnewyork.us/Public-Safety/NYPD-Complaint-Data-Current-Year-To-Date-/5uac-w243
+#     → Click "Export" → "CSV"
+#
+# Once downloaded, update the paths below (HISTORIC_CSV and YTD_CSV) to point
+# to the new files (their filenames include a date stamp like _20260805).
+#
+# STEP 2: CHANGE current_quarter TO THE MOST RECENT COMPLETED QUARTER
+# ---------------------------------------------------
+# For example, if Q2 2026 data is now out, set current_quarter <- 2
+# If you're rolling into a new year (Q1 2027), also update current_year.
+#
+# STEP 3: RUN THE SCRIPT
+# ---------------------------------------------------
+# Click Source in RStudio. It reads the local CSVs (no internet needed for
+# the crime data) and writes crime_data.json. Takes ~1-2 minutes.
+#
+# Requires: install.packages(c("readr", "jsonlite", "httr"))
+#           (httr is only used for the small MTA ridership fetch at the end)
 # ─────────────────────────────────────────────────────────────────────────────
 
-library(httr)
+library(readr)
 library(jsonlite)
+library(httr)  # only for MTA ridership API
 
-# !! PASTE YOUR FREE APP TOKEN BETWEEN THE QUOTES BELOW !!
-# Get one at: data.cityofnewyork.us -> Sign In -> Developer Settings -> Create New App Token
-APP_TOKEN <- ""
+# ── STEP 1: PATHS TO YOUR DOWNLOADED CSV FILES ──────────────────────────────
+# Update these paths when you download new files (the date stamp changes).
+HISTORIC_CSV <- "C:/Users/paulr/Dropbox/Vital City/Most recent complaints data/NYPD_Complaint_Data_Historic_20260805.csv"
+YTD_CSV      <- "C:/Users/paulr/Dropbox/Vital City/Most recent complaints data/NYPD_Complaint_Data_Current_(Year_To_Date)_20260805.csv"
 
-HISTORIC_ENDPOINT <- "https://data.cityofnewyork.us/resource/qgea-i56i.json"
-YTD_ENDPOINT      <- "https://data.cityofnewyork.us/resource/5uac-w243.json"
-
-# ── SET THESE MANUALLY EACH QUARTER ─────────────────────────────────────────
-# Update these two lines when new data becomes available.
-# current_year    = the most recent year with data (e.g. 2025)
-# current_quarter = the most recent quarter available (1, 2, 3, or 4)
+# ── STEP 2: SET THE MOST RECENT QUARTER ─────────────────────────────────────
 current_year    <- 2026
 current_quarter <- 2
 # ─────────────────────────────────────────────────────────────────────────────
+
+# Optional: MTA ridership API token (leave empty; not required)
+APP_TOKEN <- ""
 
 ytd_end_month <- current_quarter * 3
 today         <- Sys.Date()
@@ -66,125 +92,150 @@ BOROUGH_MAP <- c(
   "PATROL BORO STATEN ISLAND" = "Staten Island"
 )
 
-# ── Socrata query with pagination ─────────────────────────────────────────────
-# Fetches ALL rows by looping with $offset until we get fewer than page_size back
+# (Old Socrata API code removed — this script now reads CSVs directly, which is much faster and doesn't time out.)
 
-socrata_query_all <- function(endpoint, soql, page_size = 50000) {
-  all_results <- list()
-  offset <- 0
+# ── Load and aggregate CSV data ─────────────────────────────────────────────
+# Read both CSVs, apply the same classification we used to use in SoQL,
+# then aggregate by year/quarter/month/offense/law_cat/patrol_boro/precinct/loc_type.
 
-  repeat {
-    # Append LIMIT and OFFSET to the SoQL query
-    paged_soql <- sprintf("%s LIMIT %d OFFSET %d", soql, page_size, offset)
+if (!file.exists(HISTORIC_CSV)) {
+  stop(sprintf("HISTORIC_CSV not found at: %s\nDownload it from https://data.cityofnewyork.us/Public-Safety/NYPD-Complaint-Data-Historic/qgea-i56i and update the path at the top of this script.", HISTORIC_CSV))
+}
+if (!file.exists(YTD_CSV)) {
+  stop(sprintf("YTD_CSV not found at: %s\nDownload it from https://data.cityofnewyork.us/Public-Safety/NYPD-Complaint-Data-Current-Year-To-Date-/5uac-w243 and update the path at the top of this script.", YTD_CSV))
+}
 
-    qparams <- list(`$query` = paged_soql)
-    if (nchar(APP_TOKEN) > 0) qparams[["$$app_token"]] <- APP_TOKEN
+read_and_classify <- function(csv_path, label) {
+  cat(sprintf("\nReading %s from %s...\n", label, basename(csv_path)))
+  # Read only the columns we need — much faster than reading everything
+  needed_cols <- c("RPT_DT", "KY_CD", "OFNS_DESC", "LAW_CAT_CD", "PATROL_BORO",
+                   "ADDR_PCT_CD", "JURISDICTION_CODE", "PREM_TYP_DESC")
+  df <- read_csv(csv_path,
+                 col_types = cols(.default = col_character()),
+                 col_select = any_of(needed_cols),
+                 progress = TRUE)
+  # Normalize to lowercase columns (matches downstream code)
+  names(df) <- tolower(names(df))
+  # Parse date — use report date (RPT_DT). This is Vital City's standard.
+  df$rpt_date <- as.Date(df$rpt_dt, format = "%m/%d/%Y")
+  df <- df[!is.na(df$rpt_date), ]
+  df$yr <- as.integer(format(df$rpt_date, "%Y"))
+  df$month <- as.integer(format(df$rpt_date, "%m"))
 
-    resp <- GET(
-      url   = endpoint,
-      query = qparams,
-      add_headers(Accept = "application/json"),
-      timeout(120)
-    )
-    if (http_error(resp)) {
-      stop(paste("API error:", status_code(resp), content(resp, "text", encoding = "UTF-8")))
+  # Normalize offense descriptions for the seven major crimes using KY_CD.
+  # KY_CD (the NYPD offense code) is stable, while OFNS_DESC text sometimes has
+  # variants — truncated ("MURDER & NON-NEGL. MANSLAUGHTE"), old wordings, or
+  # different casing — depending on when the record was entered. This causes
+  # undercounts in some years (2022 & 2023 for murder in particular).
+  # Josh's midyear script uses KY_CD directly, and we do the same here:
+  # any row with a major-crime KY_CD gets its ofns_desc reset to the canonical name.
+  df$ofns_desc <- trimws(df$ofns_desc)
+  df$ky_cd <- suppressWarnings(as.integer(df$ky_cd))
+  MAJOR_KY <- list(
+    "101" = "MURDER & NON-NEGL. MANSLAUGHTER",
+    "104" = "RAPE",
+    "105" = "ROBBERY",
+    "106" = "FELONY ASSAULT",
+    "107" = "BURGLARY",
+    "109" = "GRAND LARCENY",
+    "110" = "GRAND LARCENY OF MOTOR VEHICLE"
+  )
+  for (code_str in names(MAJOR_KY)) {
+    code <- as.integer(code_str)
+    canonical <- MAJOR_KY[[code_str]]
+    n_normalized <- sum(!is.na(df$ky_cd) & df$ky_cd == code & df$ofns_desc != canonical, na.rm = TRUE)
+    if (n_normalized > 0) {
+      cat(sprintf("    normalized %d rows with KY_CD %d to '%s'\n",
+                  n_normalized, code, canonical))
     }
-
-    batch <- fromJSON(content(resp, "text", encoding = "UTF-8"), flatten = TRUE)
-
-    if (is.null(batch) || !is.data.frame(batch) || nrow(batch) == 0) break
-
-    all_results[[length(all_results) + 1]] <- batch
-    if (nrow(batch) < page_size) break   # last page
-    offset <- offset + page_size
-    Sys.sleep(0.2)
+    df$ofns_desc[!is.na(df$ky_cd) & df$ky_cd == code] <- canonical
   }
-
-  if (length(all_results) == 0) return(NULL)
-  do.call(rbind, all_results)
+  # Quarter
+  df$quarter <- ifelse(df$month <= 3, "Q1",
+                ifelse(df$month <= 6, "Q2",
+                ifelse(df$month <= 9, "Q3", "Q4")))
+  # Location type:
+  # - subway: PREM_TYP_DESC contains "SUBWAY" (matches "TRANSIT - NYC SUBWAY")
+  #           This is Vital City's midyear crime report definition, used for ALL crimes.
+  #           EXCEPTION: For MURDER & NON-NEGL. MANSLAUGHTER specifically, we also count
+  #           a case as subway when jurisdiction_code = 1 (Transit Bureau). The premises
+  #           code is inconsistently applied for subway murders (sometimes recorded as
+  #           the specific location rather than "TRANSIT - NYC SUBWAY"), so the midyear
+  #           report's PREM_TYP_DESC-only filter misses some. Because murder is such a
+  #           small category, any missed case matters — we use the broader filter to
+  #           catch them. This does not change counts for any other offense.
+  # - housing: jurisdiction_code = 2 (NYCHA public housing)
+  # - other: everywhere else
+  df$jurisdiction_code <- suppressWarnings(as.integer(df$jurisdiction_code))
+  is_subway_prem <- !is.na(df$prem_typ_desc) & grepl("SUBWAY", toupper(df$prem_typ_desc), fixed = TRUE)
+  is_murder <- !is.na(df$ofns_desc) & df$ofns_desc == "MURDER & NON-NEGL. MANSLAUGHTER"
+  is_murder_transit <- is_murder & !is.na(df$jurisdiction_code) & df$jurisdiction_code == 1
+  is_subway <- is_subway_prem | is_murder_transit
+  df$loc_type <- ifelse(is_subway, "subway",
+                 ifelse(!is.na(df$jurisdiction_code) & df$jurisdiction_code == 2, "housing", "other"))
+  # Diagnostic: show classification distribution
+  cat(sprintf("    loc_type: subway=%d, housing=%d, other=%d\n",
+              sum(df$loc_type == "subway"),
+              sum(df$loc_type == "housing"),
+              sum(df$loc_type == "other")))
+  # Report subway murder count for verification
+  n_subway_murders <- sum(df$loc_type == "subway" & !is.na(df$ofns_desc) &
+                          df$ofns_desc == "MURDER & NON-NEGL. MANSLAUGHTER")
+  cat(sprintf("    subway murders detected: %d\n", n_subway_murders))
+  # Drop rows with missing offense
+  df <- df[!is.na(df$ofns_desc) & df$ofns_desc != "", ]
+  # Keep only columns we need for aggregation
+  df[, c("yr","quarter","month","ofns_desc","law_cat_cd",
+         "patrol_boro","addr_pct_cd","loc_type")]
 }
 
-# ── Build SoQL for one year ───────────────────────────────────────────────────
+hist_df <- read_and_classify(HISTORIC_CSV, "historic (2006-2025)")
+cat(sprintf("  Historic rows: %d, year range: %d-%d\n",
+            nrow(hist_df), min(hist_df$yr, na.rm=TRUE), max(hist_df$yr, na.rm=TRUE)))
 
-build_soql <- function(year, ytd_month_end) {
-  loc_expr <- paste0(
-    "CASE ",
-    "WHEN jurisdiction_code = 1 THEN 'subway' ",
-    "WHEN jurisdiction_code = 2 THEN 'housing' ",
-    "ELSE 'other' END"
-  )
-  q_expr <- paste0(
-    "CASE ",
-    "WHEN date_extract_m(rpt_dt) <= 3 THEN 'Q1' ",
-    "WHEN date_extract_m(rpt_dt) <= 6 THEN 'Q2' ",
-    "WHEN date_extract_m(rpt_dt) <= 9 THEN 'Q3' ",
-    "ELSE 'Q4' END"
-  )
-  sprintf(
-    "SELECT date_extract_y(rpt_dt) AS yr, %s AS quarter,
-            date_extract_m(rpt_dt) AS month,
-            ofns_desc, law_cat_cd, patrol_boro, addr_pct_cd, %s AS loc_type, COUNT(*) AS n
-     WHERE  rpt_dt >= '%d-01-01T00:00:00'
-       AND  rpt_dt <  '%d-01-01T00:00:00'
-       AND  date_extract_m(rpt_dt) <= %d
-       AND  ofns_desc IS NOT NULL
-     GROUP BY yr, quarter, month, ofns_desc, law_cat_cd, patrol_boro, addr_pct_cd, loc_type",
-    q_expr, loc_expr,
-    year, year + 1, ytd_month_end
-  )
+ytd_df <- read_and_classify(YTD_CSV, "current YTD")
+cat(sprintf("  YTD rows: %d, year range: %d-%d\n",
+            nrow(ytd_df), min(ytd_df$yr, na.rm=TRUE), max(ytd_df$yr, na.rm=TRUE)))
+
+# For current year, respect the ytd_end_month cutoff
+if (nrow(ytd_df) > 0) {
+  ytd_df <- ytd_df[ytd_df$yr < current_year | (ytd_df$yr == current_year & ytd_df$month <= ytd_end_month), ]
+  cat(sprintf("  YTD rows after applying month <= %d for %d: %d\n",
+              ytd_end_month, current_year, nrow(ytd_df)))
 }
 
-# ── Fetch all years ───────────────────────────────────────────────────────────
+# Restrict historic to years <= (current_year - 1), in case there's overlap
+hist_df <- hist_df[hist_df$yr >= 2006 & hist_df$yr < current_year, ]
 
-all_rows <- list()
+# Combine
+combined <- rbind(hist_df, ytd_df)
+cat(sprintf("\nTotal rows combined: %d\n", nrow(combined)))
 
-# Historic dataset: 2006 through 2025 (2025 moved to historic as of Q1 2026)
-hist_end <- 2025
-cat(sprintf("\nFetching historic data year by year (2006-%d)...\n", hist_end))
+# Replace NAs in grouping variables with placeholder strings.
+# CRITICAL: R's aggregate() silently drops rows where any grouping variable is NA.
+# NYPD data quality varies by year — some rows have missing patrol_boro,
+# law_cat_cd, or addr_pct_cd — and dropping them here undercounts crimes
+# (murder in 2022 and 2023 in particular). Replace with placeholders so
+# those rows still get counted in the citywide/all-boroughs totals.
+na_before <- sapply(combined[, c("law_cat_cd", "patrol_boro", "addr_pct_cd")],
+                    function(x) sum(is.na(x) | x == ""))
+cat(sprintf("NA counts in grouping vars before replacement:\n"))
+print(na_before)
+combined$law_cat_cd[is.na(combined$law_cat_cd)  | combined$law_cat_cd == ""]   <- "UNKNOWN"
+combined$patrol_boro[is.na(combined$patrol_boro) | combined$patrol_boro == ""] <- "UNKNOWN"
+combined$addr_pct_cd[is.na(combined$addr_pct_cd) | combined$addr_pct_cd == ""] <- "0"
 
-for (yr in 2006:hist_end) {
-  cat(sprintf("  Fetching %d... ", yr))
-  result <- NULL
-  for (attempt in 1:3) {
-    result <- tryCatch(
-      socrata_query_all(HISTORIC_ENDPOINT, build_soql(yr, 12)),
-      error = function(e) { cat(sprintf("ERROR (attempt %d): %s\n", attempt, e$message)); NULL }
-    )
-    if (!is.null(result) && is.data.frame(result) && nrow(result) > 0) break
-    if (attempt < 3) { cat(sprintf("  Retrying %d... ", yr)); Sys.sleep(3) }
-  }
-  if (!is.null(result) && is.data.frame(result) && nrow(result) > 0) {
-    all_rows[[length(all_rows) + 1]] <- result
-    cat(sprintf("%d rows\n", nrow(result)))
-  } else {
-    cat(sprintf("FAILED after 3 attempts — %d missing\n", yr))
-  }
-  Sys.sleep(0.5)
-}
+# Aggregate to counts (same shape as the old SoQL output)
+cat("Aggregating counts...\n")
+all_rows <- aggregate(
+  cbind(n = rep(1, nrow(combined))) ~
+    yr + quarter + month + ofns_desc + law_cat_cd + patrol_boro + addr_pct_cd + loc_type,
+  data = combined, FUN = sum
+)
+cat(sprintf("Aggregated to %d rows\n", nrow(all_rows)))
 
-# YTD dataset: current year (and any years not yet in historic)
-# hist_end is hardcoded to 2024 — update to 2025 once that moves to historic
-ytd_years <- unique(c(current_year))
-# Add prior year if not yet in historic (2025 moved to historic, so only 2026+ needed)
-if (current_year > 2026) ytd_years <- unique(c(current_year - 1, ytd_years))
-cat(sprintf("\nFetching YTD data (%s)...\n", paste(ytd_years, collapse=" and ")))
-for (yr in ytd_years) {
-  cat(sprintf("  Fetching %d... ", yr))
-  result <- tryCatch(
-    socrata_query_all(YTD_ENDPOINT, build_soql(yr, ytd_end_month)),
-    error = function(e) { cat(sprintf("ERROR: %s\n", e$message)); NULL }
-  )
-  if (!is.null(result) && is.data.frame(result) && nrow(result) > 0) {
-    all_rows[[length(all_rows) + 1]] <- result
-    cat(sprintf("%d rows\n", nrow(result)))
-  } else {
-    cat("no data\n")
-  }
-  Sys.sleep(0.3)
-}
-
-all_rows <- do.call(rbind, all_rows)
-cat(sprintf("\nTotal rows fetched: %d\n", nrow(all_rows)))
+# Free memory
+rm(hist_df, ytd_df, combined); gc(verbose = FALSE)
 
 # ── Process ───────────────────────────────────────────────────────────────────
 
@@ -236,9 +287,18 @@ others_in_list <- sort(setdiff(all_crime_types, MAJOR_SEVEN))
 all_crime_types_ordered <- c(major_in_list, others_in_list)
 
 # Expand to three location buckets (use ALL rows for group totals)
+# Diagnostic: show loc_type distribution
+loc_type_counts <- table(all_rows$loc_type, useNA = "ifany")
+cat("\nloc_type distribution in aggregated data:\n")
+print(loc_type_counts)
+
 rows_c <- all_rows; rows_c$bucket <- "citywide"
-rows_s <- all_rows[all_rows$loc_type == "subway",  ]; rows_s$bucket <- "subway"
-rows_h <- all_rows[all_rows$loc_type == "housing", ]; rows_h$bucket <- "housing"
+rows_s <- all_rows[all_rows$loc_type == "subway",  ]
+rows_h <- all_rows[all_rows$loc_type == "housing", ]
+if (nrow(rows_s) > 0) rows_s$bucket <- "subway"
+if (nrow(rows_h) > 0) rows_h$bucket <- "housing"
+cat(sprintf("  citywide rows: %d, subway rows: %d, housing rows: %d\n",
+            nrow(rows_c), nrow(rows_s), nrow(rows_h)))
 expanded <- rbind(rows_c, rows_s, rows_h)
 
 # Aggregate by borough
@@ -359,15 +419,15 @@ build_pct_data <- function(rows_subset) {
 
 rows_with_pct <- all_rows[!is.na(all_rows$precinct) & all_rows$precinct > 0, ]
 
-cat("  Building citywide precinct data...\n")
-pct_citywide <- build_pct_data(rows_with_pct[rows_with_pct$loc_type == "other", ])
+cat("  Building citywide precinct data (all complaints in each precinct, including subway and housing)...\n")
+pct_citywide <- build_pct_data(rows_with_pct)
 cat(sprintf("    %d precincts\n", length(pct_citywide[["All crime"]])))
 
-cat("  Building subway precinct data...\n")
+cat("  Building subway-only precinct data (for the dedicated Subway view)...\n")
 pct_subway <- build_pct_data(rows_with_pct[rows_with_pct$loc_type == "subway", ])
 cat(sprintf("    %d precincts\n", length(pct_subway[["All crime"]])))
 
-cat("  Building housing precinct data...\n")
+cat("  Building housing-only precinct data (for the dedicated Housing view)...\n")
 pct_housing <- build_pct_data(rows_with_pct[rows_with_pct$loc_type == "housing", ])
 cat(sprintf("    %d precincts\n", length(pct_housing[["All crime"]])))
 
@@ -661,7 +721,7 @@ build_pct_monthly_slice <- function(rows_subset) {
   out
 }
 
-pct_monthly_citywide <- build_pct_monthly_slice(rows_pct_monthly[rows_pct_monthly$loc_type == "other",  ])
+pct_monthly_citywide <- build_pct_monthly_slice(rows_pct_monthly)
 pct_monthly_subway   <- build_pct_monthly_slice(rows_pct_monthly[rows_pct_monthly$loc_type == "subway", ])
 pct_monthly_housing  <- build_pct_monthly_slice(rows_pct_monthly[rows_pct_monthly$loc_type == "housing",])
 
