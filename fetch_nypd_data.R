@@ -72,7 +72,7 @@ CRIME_GROUPS <- list(
   ),
   "All assaults" = c(
     "FELONY ASSAULT",
-    "ASSAULT 3 & RELATED OFFENSES"
+    "MISDEMEANOR ASSAULT"
   )
 )
 
@@ -108,7 +108,7 @@ if (!file.exists(YTD_CSV)) {
 read_and_classify <- function(csv_path, label) {
   cat(sprintf("\nReading %s from %s...\n", label, basename(csv_path)))
   # Read only the columns we need — much faster than reading everything
-  needed_cols <- c("RPT_DT", "KY_CD", "OFNS_DESC", "LAW_CAT_CD", "PATROL_BORO",
+  needed_cols <- c("RPT_DT", "KY_CD", "OFNS_DESC", "PD_DESC", "LAW_CAT_CD", "PATROL_BORO",
                    "ADDR_PCT_CD", "JURISDICTION_CODE", "PREM_TYP_DESC")
   df <- read_csv(csv_path,
                  col_types = cols(.default = col_character()),
@@ -184,6 +184,26 @@ read_and_classify <- function(csv_path, label) {
   cat(sprintf("    subway murders detected: %d\n", n_subway_murders))
   # Drop rows with missing offense
   df <- df[!is.na(df$ofns_desc) & df$ofns_desc != "", ]
+  # Build synthetic "MISDEMEANOR ASSAULT" rows: a filtered subset of
+  # "ASSAULT 3 & RELATED OFFENSES" that keeps only the actual physical-assault
+  # PD_DESC values and excludes menacing, stalking, harassment, reckless
+  # endangerment, etc. These rows are appended alongside the originals so the
+  # raw NYPD category is preserved intact AND a cleaner "Misdemeanor assault"
+  # option appears in the dropdown. The "All assaults" group uses this
+  # synthetic category so menacing is correctly excluded from assault totals.
+  df$pd_desc <- trimws(df$pd_desc)
+  is_misd_assault <- !is.na(df$ofns_desc) &
+                     df$ofns_desc == "ASSAULT 3 & RELATED OFFENSES" &
+                     !is.na(df$pd_desc) &
+                     df$pd_desc %in% c("ASSAULT 3", "OBSTR BREATH/CIRCUL")
+  n_misd <- sum(is_misd_assault)
+  cat(sprintf("    building synthetic MISDEMEANOR ASSAULT: %d qualifying rows\n", n_misd))
+  if (n_misd > 0) {
+    misd_rows <- df[is_misd_assault, ]
+    misd_rows$ofns_desc <- "MISDEMEANOR ASSAULT"
+    df <- rbind(df, misd_rows)
+  }
+
   # Keep only columns we need for aggregation
   df[, c("yr","quarter","month","ofns_desc","law_cat_cd",
          "patrol_boro","addr_pct_cd","loc_type")]
