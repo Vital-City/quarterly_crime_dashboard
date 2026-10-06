@@ -121,7 +121,7 @@ read_and_classify <- function(csv_path, label) {
   df <- df[!is.na(df$rpt_date), ]
   df$yr <- as.integer(format(df$rpt_date, "%Y"))
   df$month <- as.integer(format(df$rpt_date, "%m"))
-
+  
   # Normalize offense descriptions for the seven major crimes using KY_CD.
   # KY_CD (the NYPD offense code) is stable, while OFNS_DESC text sometimes has
   # variants — truncated ("MURDER & NON-NEGL. MANSLAUGHTE"), old wordings, or
@@ -152,8 +152,8 @@ read_and_classify <- function(csv_path, label) {
   }
   # Quarter
   df$quarter <- ifelse(df$month <= 3, "Q1",
-                ifelse(df$month <= 6, "Q2",
-                ifelse(df$month <= 9, "Q3", "Q4")))
+                       ifelse(df$month <= 6, "Q2",
+                              ifelse(df$month <= 9, "Q3", "Q4")))
   # Location type:
   # - subway: PREM_TYP_DESC contains "SUBWAY" (matches "TRANSIT - NYC SUBWAY")
   #           This is Vital City's midyear crime report definition, used for ALL crimes.
@@ -172,7 +172,7 @@ read_and_classify <- function(csv_path, label) {
   is_murder_transit <- is_murder & !is.na(df$jurisdiction_code) & df$jurisdiction_code == 1
   is_subway <- is_subway_prem | is_murder_transit
   df$loc_type <- ifelse(is_subway, "subway",
-                 ifelse(!is.na(df$jurisdiction_code) & df$jurisdiction_code == 2, "housing", "other"))
+                        ifelse(!is.na(df$jurisdiction_code) & df$jurisdiction_code == 2, "housing", "other"))
   # Diagnostic: show classification distribution
   cat(sprintf("    loc_type: subway=%d, housing=%d, other=%d\n",
               sum(df$loc_type == "subway"),
@@ -180,7 +180,7 @@ read_and_classify <- function(csv_path, label) {
               sum(df$loc_type == "other")))
   # Report subway murder count for verification
   n_subway_murders <- sum(df$loc_type == "subway" & !is.na(df$ofns_desc) &
-                          df$ofns_desc == "MURDER & NON-NEGL. MANSLAUGHTER")
+                            df$ofns_desc == "MURDER & NON-NEGL. MANSLAUGHTER")
   cat(sprintf("    subway murders detected: %d\n", n_subway_murders))
   # Drop rows with missing offense
   df <- df[!is.na(df$ofns_desc) & df$ofns_desc != "", ]
@@ -193,9 +193,9 @@ read_and_classify <- function(csv_path, label) {
   # synthetic category so menacing is correctly excluded from assault totals.
   df$pd_desc <- trimws(df$pd_desc)
   is_misd_assault <- !is.na(df$ofns_desc) &
-                     df$ofns_desc == "ASSAULT 3 & RELATED OFFENSES" &
-                     !is.na(df$pd_desc) &
-                     df$pd_desc %in% c("ASSAULT 3", "OBSTR BREATH/CIRCUL")
+    df$ofns_desc == "ASSAULT 3 & RELATED OFFENSES" &
+    !is.na(df$pd_desc) &
+    df$pd_desc %in% c("ASSAULT 3", "OBSTR BREATH/CIRCUL")
   n_misd <- sum(is_misd_assault)
   cat(sprintf("    building synthetic MISDEMEANOR ASSAULT: %d qualifying rows\n", n_misd))
   if (n_misd > 0) {
@@ -203,7 +203,7 @@ read_and_classify <- function(csv_path, label) {
     misd_rows$ofns_desc <- "MISDEMEANOR ASSAULT"
     df <- rbind(df, misd_rows)
   }
-
+  
   # Keep only columns we need for aggregation
   df[, c("yr","quarter","month","ofns_desc","law_cat_cd",
          "patrol_boro","addr_pct_cd","loc_type")]
@@ -273,8 +273,8 @@ all_rows$law_cat_cd  <- toupper(trimws(as.character(all_rows$law_cat_cd)))
 
 all_rows <- all_rows[
   !is.na(all_rows$ofns_desc) & all_rows$ofns_desc != "" &
-  !is.na(all_rows$n) & all_rows$n > 0 &
-  !is.na(all_rows$yr) & all_rows$yr != "0", ]
+    !is.na(all_rows$n) & all_rows$n > 0 &
+    !is.na(all_rows$yr) & all_rows$yr != "0", ]
 
 all_rows$borough <- BOROUGH_MAP[all_rows$patrol_boro]
 all_rows$borough[is.na(all_rows$borough)] <- "Other"
@@ -334,10 +334,10 @@ agg <- rbind(agg, agg_all[, names(agg)])
 cat("  Building 'All crime' group (all offenses)...
 ")
 all_crime_group <- aggregate(n ~ bucket + borough + yr + quarter, data = agg[agg$ofns_desc %in% unique(all_rows$ofns_desc), ], FUN = sum)
-all_crime_group_all <- aggregate(n ~ bucket + yr + quarter, data = expanded, FUN = sum)
+all_crime_group_all <- aggregate(n ~ bucket + yr + quarter, data = expanded[expanded$ofns_desc != "MISDEMEANOR ASSAULT", ], FUN = sum)
 all_crime_group_all$borough <- "All boroughs"
 all_crime_combined <- rbind(
-  aggregate(n ~ bucket + borough + yr + quarter, data = expanded[expanded$borough != "Other", ], FUN = sum),
+  aggregate(n ~ bucket + borough + yr + quarter, data = expanded[expanded$borough != "Other" & expanded$ofns_desc != "MISDEMEANOR ASSAULT", ], FUN = sum),
   all_crime_group_all[, c("bucket","borough","yr","quarter","n")]
 )
 all_crime_combined$ofns_desc <- "All crime"
@@ -348,15 +348,15 @@ cat("  Building law category groups...\n")
 law_cat_agg <- list()
 for (lcat in c("FELONY", "MISDEMEANOR", "VIOLATION")) {
   label <- switch(lcat,
-    "FELONY"      = "All felonies",
-    "MISDEMEANOR" = "All misdemeanors",
-    "VIOLATION"   = "All violations"
+                  "FELONY"      = "All felonies",
+                  "MISDEMEANOR" = "All misdemeanors",
+                  "VIOLATION"   = "All violations"
   )
   # Use expanded which already has bucket and borough columns
-  sub_law <- expanded[!is.na(expanded$law_cat_cd) & toupper(trimws(expanded$law_cat_cd)) == lcat, ]
+  sub_law <- expanded[!is.na(expanded$law_cat_cd) & toupper(trimws(expanded$law_cat_cd)) == lcat & expanded$ofns_desc != "MISDEMEANOR ASSAULT", ]
   if (nrow(sub_law) == 0) { cat(sprintf("    %s: no rows\n", label)); next }
   a_boro <- aggregate(n ~ bucket + borough + yr + quarter,
-    data = sub_law[sub_law$borough != "Other", ], FUN = sum)
+                      data = sub_law[sub_law$borough != "Other", ], FUN = sum)
   a_all  <- aggregate(n ~ bucket + yr + quarter, data = sub_law, FUN = sum)
   a_all$borough <- "All boroughs"
   combined <- rbind(a_boro, a_all[, names(a_boro)])
@@ -389,11 +389,11 @@ cat("Building precinct aggregation...\n")
 # loc_type values: "other" = citywide, "subway", "housing"
 build_pct_data <- function(rows_subset) {
   if (nrow(rows_subset) == 0) return(list())
-
+  
   rows_subset$pct_key <- paste0("pct_", rows_subset$precinct)
   agg <- aggregate(n ~ ofns_desc + pct_key + yr + quarter,
                    data = rows_subset, FUN = sum)
-
+  
   # Crime groups
   group_rows <- list()
   for (gname in names(CRIME_GROUPS)) {
@@ -407,22 +407,22 @@ build_pct_data <- function(rows_subset) {
   # Law category groups
   for (lcat in c("FELONY", "MISDEMEANOR", "VIOLATION")) {
     label <- switch(lcat, "FELONY"="All felonies", "MISDEMEANOR"="All misdemeanors", "VIOLATION"="All violations")
-    sub_lc <- rows_subset[!is.na(rows_subset$law_cat_cd) & toupper(trimws(rows_subset$law_cat_cd)) == lcat, ]
+    sub_lc <- rows_subset[!is.na(rows_subset$law_cat_cd) & toupper(trimws(rows_subset$law_cat_cd)) == lcat & rows_subset$ofns_desc != "MISDEMEANOR ASSAULT", ]
     if (nrow(sub_lc) == 0) next
     sub_lc$pct_key <- paste0("pct_", sub_lc$precinct)
     lc_agg <- aggregate(n ~ pct_key + yr + quarter, data = sub_lc, FUN = sum)
     lc_agg$ofns_desc <- label
     group_rows[[label]] <- lc_agg[, c("ofns_desc","pct_key","yr","quarter","n")]
   }
-  all_c <- aggregate(n ~ pct_key + yr + quarter, data = agg, FUN = sum)
+  all_c <- aggregate(n ~ pct_key + yr + quarter, data = agg[agg$ofns_desc != "MISDEMEANOR ASSAULT", ], FUN = sum)
   all_c$ofns_desc <- "All crime"
-
+  
   final <- rbind(
     agg[, c("ofns_desc","pct_key","yr","quarter","n")],
     if (length(group_rows) > 0) do.call(rbind, group_rows) else NULL,
     all_c[, c("ofns_desc","pct_key","yr","quarter","n")]
   )
-
+  
   # Build nested list
   out <- list()
   for (i in seq_len(nrow(final))) {
@@ -516,10 +516,10 @@ if (!is.null(mta_resp) && !http_error(mta_resp)) {
     mta_data$mo  <- as.integer(substr(as.character(mta_data$month), 6, 7))
     mta_data$ridership <- as.numeric(mta_data$ridership)
     mta_data <- mta_data[!is.na(mta_data$yr) & !is.na(mta_data$ridership) & mta_data$yr >= 2018, ]
-
+    
     mta_data <- mta_data[order(mta_data$yr, mta_data$mo), ]
     incomplete_months <- list()
-
+    
     # QUICK FIX: MTA dataset had incomplete June 2026 data — hardcode actual value
     # TODO: remove this block once MTA publishes final June 2026 numbers via API
     JUNE_2026_ACTUAL <- 113321651
@@ -538,10 +538,10 @@ if (!is.null(mta_resp) && !http_error(mta_resp)) {
       mta_data <- rbind(mta_data, new_row)
       mta_data <- mta_data[order(mta_data$yr, mta_data$mo), ]
     }
-
+    
     mta_data$quarter <- ifelse(mta_data$mo <= 3, "Q1",
-                        ifelse(mta_data$mo <= 6, "Q2",
-                        ifelse(mta_data$mo <= 9, "Q3", "Q4")))
+                               ifelse(mta_data$mo <= 6, "Q2",
+                                      ifelse(mta_data$mo <= 9, "Q3", "Q4")))
     # Store quarterly totals
     mta_qtr <- aggregate(ridership ~ yr + quarter, data = mta_data, FUN = sum)
     for (i in seq_len(nrow(mta_qtr))) {
@@ -658,21 +658,21 @@ for (gname in names(CRIME_GROUPS)) {
   monthly_group_rows[[gname]] <- g_m[, names(agg_monthly)]
 }
 # All crime monthly
-all_crime_monthly_all <- aggregate(n ~ bucket + yr + month, data = expanded[!is.na(expanded$month), ], FUN = sum)
+all_crime_monthly_all <- aggregate(n ~ bucket + yr + month, data = expanded[!is.na(expanded$month) & expanded$ofns_desc != "MISDEMEANOR ASSAULT", ], FUN = sum)
 all_crime_monthly_all$borough <- "All boroughs"
 all_crime_monthly_boros <- aggregate(n ~ bucket + borough + yr + month,
-  data = expanded[expanded$borough != "Other" & !is.na(expanded$month), ], FUN = sum)
+                                     data = expanded[expanded$borough != "Other" & !is.na(expanded$month) & expanded$ofns_desc != "MISDEMEANOR ASSAULT", ], FUN = sum)
 all_crime_monthly_combined <- rbind(all_crime_monthly_boros, all_crime_monthly_all[, names(all_crime_monthly_boros)])
 all_crime_monthly_combined$ofns_desc <- "All crime"
 agg_monthly <- rbind(agg_monthly,
-  if (length(monthly_group_rows) > 0) do.call(rbind, monthly_group_rows) else NULL,
-  all_crime_monthly_combined[, names(agg_monthly)]
+                     if (length(monthly_group_rows) > 0) do.call(rbind, monthly_group_rows) else NULL,
+                     all_crime_monthly_combined[, names(agg_monthly)]
 )
 
 # Add law category monthly groups
 for (lcat in c("FELONY", "MISDEMEANOR", "VIOLATION")) {
   label <- switch(lcat, "FELONY"="All felonies", "MISDEMEANOR"="All misdemeanors", "VIOLATION"="All violations")
-  sub_lm <- expanded[!is.na(expanded$law_cat_cd) & toupper(trimws(expanded$law_cat_cd)) == lcat & !is.na(expanded$month), ]
+  sub_lm <- expanded[!is.na(expanded$law_cat_cd) & toupper(trimws(expanded$law_cat_cd)) == lcat & !is.na(expanded$month) & expanded$ofns_desc != "MISDEMEANOR ASSAULT", ]
   if (nrow(sub_lm) == 0) next
   lm_boro <- aggregate(n ~ bucket + borough + yr + month, data=sub_lm[sub_lm$borough!="Other",], FUN=sum)
   lm_all  <- aggregate(n ~ bucket + yr + month, data=sub_lm, FUN=sum)
@@ -716,17 +716,17 @@ build_pct_monthly_slice <- function(rows_subset) {
   # Law category groups
   for (lcat in c("FELONY", "MISDEMEANOR", "VIOLATION")) {
     label <- switch(lcat, "FELONY"="All felonies", "MISDEMEANOR"="All misdemeanors", "VIOLATION"="All violations")
-    sub_lc <- rows_subset[!is.na(rows_subset$law_cat_cd) & toupper(trimws(rows_subset$law_cat_cd)) == lcat, ]
+    sub_lc <- rows_subset[!is.na(rows_subset$law_cat_cd) & toupper(trimws(rows_subset$law_cat_cd)) == lcat & rows_subset$ofns_desc != "MISDEMEANOR ASSAULT", ]
     if (nrow(sub_lc) == 0) next
     lc_agg <- aggregate(n ~ pct_key + yr + month, data = sub_lc, FUN = sum)
     lc_agg$ofns_desc <- label
     group_rows[[label]] <- lc_agg[, names(agg)]
   }
-  all_c <- aggregate(n ~ pct_key + yr + month, data = rows_subset, FUN = sum)
+  all_c <- aggregate(n ~ pct_key + yr + month, data = rows_subset[rows_subset$ofns_desc != "MISDEMEANOR ASSAULT", ], FUN = sum)
   all_c$ofns_desc <- "All crime"
   final <- rbind(agg,
-    if (length(group_rows) > 0) do.call(rbind, group_rows) else NULL,
-    all_c[, names(agg)]
+                 if (length(group_rows) > 0) do.call(rbind, group_rows) else NULL,
+                 all_c[, names(agg)]
   )
   out <- list()
   for (i in seq_len(nrow(final))) {
