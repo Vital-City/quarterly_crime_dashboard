@@ -819,6 +819,53 @@ select.year-select:focus { outline: 2px solid var(--orange); }
   }
 }
 
+/* ────────────────────────────────────────────────────────────────────────── */
+/* RESTYLE OVERRIDES — metric row as separate boxed cards, YTD with chartreuse */
+/* top accent instead of left bar. Appended so these take precedence.          */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+/* Metrics row: separate cards with gaps between */
+.metrics {
+  grid-template-columns: 1.6fr repeat(4, minmax(0,1fr)) !important;
+  gap: 14px !important;
+  border-bottom: none !important;
+  margin-bottom: 3rem !important;
+}
+.metric {
+  border: 1px solid #d6d6d2 !important;
+  border-right: 1px solid #d6d6d2 !important;
+  background: #fff;
+  padding: 1.25rem !important;
+}
+.metric:last-child { border-right: 1px solid #d6d6d2 !important; }
+
+/* YTD: black card, chartreuse 3px top border (replacing the left bar) */
+.metric.ytd-metric {
+  border: 1px solid #050507 !important;
+  border-top: 3px solid var(--yellow) !important;
+  border-left: 1px solid #050507 !important;
+  padding-left: 1.25rem !important;
+}
+
+/* Mobile: YTD full-width on top, four quarters in a 2x2 grid below */
+@media (max-width: 760px) {
+  .metrics {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+  .metric.ytd-metric {
+    grid-column: 1 / -1 !important;
+  }
+}
+@media (max-width: 420px) {
+  .metrics {
+    grid-template-columns: 1fr !important;
+  }
+  .metric.ytd-metric {
+    grid-column: auto !important;
+  }
+}
+
 </style>
 </head>
 <body>
