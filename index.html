@@ -819,12 +819,12 @@ select.year-select:focus { outline: 2px solid var(--orange); }
   }
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/* RESTYLE OVERRIDES — metric row as separate boxed cards, YTD with chartreuse */
-/* top accent instead of left bar. Appended so these take precedence.          */
-/* ────────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════ */
+/* RESTYLE OVERRIDES — appended so they take precedence                     */
+/* All changes are CSS-only, HTML/JS untouched                              */
+/* ═══════════════════════════════════════════════════════════════════════ */
 
-/* Metrics row: separate cards with gaps between */
+/* ── Metrics row: separate boxed cards with gaps, YTD as the hero ─── */
 .metrics {
   grid-template-columns: 1.6fr repeat(4, minmax(0,1fr)) !important;
   gap: 14px !important;
@@ -839,7 +839,7 @@ select.year-select:focus { outline: 2px solid var(--orange); }
 }
 .metric:last-child { border-right: 1px solid #d6d6d2 !important; }
 
-/* YTD: black card, chartreuse 3px top border (replacing the left bar) */
+/* YTD: black card with chartreuse top accent instead of left bar */
 .metric.ytd-metric {
   border: 1px solid #050507 !important;
   border-top: 3px solid var(--yellow) !important;
@@ -847,7 +847,64 @@ select.year-select:focus { outline: 2px solid var(--orange); }
   padding-left: 1.25rem !important;
 }
 
-/* Mobile: YTD full-width on top, four quarters in a 2x2 grid below */
+/* ── Softer card borders throughout (chart sections, controls) ─── */
+:root {
+  --border: #d6d6d2;
+}
+
+/* ── Chart sections get a thin bordered card feel ─── */
+.chart-section,
+.movers-section {
+  border: 1px solid #d6d6d2;
+  padding: 1.5rem;
+  background: #fff;
+  margin-bottom: 2rem !important;
+}
+/* Keep the orange chart-rule tight to card top */
+.chart-section .chart-rule,
+.movers-section .chart-rule {
+  margin: -1.5rem -1.5rem 1rem !important;
+  width: 60px;
+  height: 2px;
+  background: var(--orange);
+}
+/* Card CSV row: thin divider matches softer border */
+.chart-csv-row {
+  border-top: 1px solid #ededeb !important;
+}
+
+/* ── Toggle buttons: calmer treatment (thinner border, smaller size) ─── */
+.toggle-group {
+  border: 1px solid #050507 !important;
+  height: 30px;
+}
+.toggle-group button {
+  border-right: 1px solid #050507 !important;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  padding: 0 12px;
+}
+/* The year-controls reset button keeps its softer gray border */
+
+/* ── Controls row: slightly tighter and cleaner ─── */
+.controls {
+  padding-bottom: 1rem;
+}
+.year-controls {
+  border-top: 1px solid #ededeb !important;
+}
+
+/* ── Chart titles: slightly lighter, less competing with data ─── */
+.chart-title {
+  font-weight: 500;
+  color: var(--text);
+}
+.chart-location {
+  color: var(--charcoal);
+  font-weight: 700;
+}
+
+/* ── Mobile: stats row stacks to 2x2 with YTD full-width ─── */
 @media (max-width: 760px) {
   .metrics {
     grid-template-columns: 1fr 1fr !important;
@@ -855,6 +912,14 @@ select.year-select:focus { outline: 2px solid var(--orange); }
   }
   .metric.ytd-metric {
     grid-column: 1 / -1 !important;
+  }
+  .chart-section,
+  .movers-section {
+    padding: 1rem !important;
+  }
+  .chart-section .chart-rule,
+  .movers-section .chart-rule {
+    margin: -1rem -1rem 1rem !important;
   }
 }
 @media (max-width: 420px) {
