@@ -76,9 +76,9 @@ body {
 
 /* ── Page wrapper ─── */
 .page {
-  max-width: 1200px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 1.5rem 2rem 4rem;
+  padding: 1.5rem 1.5rem 4rem;
 }
 .state-screen {
   padding: 4rem 2rem;
@@ -239,12 +239,13 @@ select:hover { border-color: var(--black); background-color: #fff; }
 .metric.ytd-metric .chart-location { color: #ffffff; }
 .metric.ytd-metric .chart-location .pct-tag { color: var(--chartreuse); }
 .metric.ytd-metric .m-title {
-  font-family: var(--font-display);
+  font-family: var(--font-primary);
   font-weight: 700;
-  font-size: 22px;
-  letter-spacing: -0.02em;
-  color: #ffffff;
-  margin-bottom: 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--chartreuse);
+  margin-bottom: 8px;
   line-height: 1;
 }
 
@@ -284,6 +285,28 @@ select:hover { border-color: var(--black); background-color: #fff; }
 .ytd-metric .delta-down { color: #7ed36b; }
 .ytd-metric .delta-flat { color: rgba(255,255,255,0.6); }
 
+/* ── Section heads between chart groups ─── */
+.section-head {
+  display: inline-block;
+  font-family: var(--font-primary);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--black);
+  margin: 2rem 0 0.4rem;
+  padding-top: 8px;
+  border-top: 3px solid var(--orange);
+}
+.section-intro {
+  font-size: 14px;
+  color: var(--text);
+  max-width: 46rem;
+  margin: 0 0 1.25rem;
+  line-height: 1.5;
+  font-weight: 300;
+}
+
 /* ── Chart sections (card frame) ─── */
 .chart-section,
 .movers-section {
@@ -305,12 +328,13 @@ select:hover { border-color: var(--black); background-color: #fff; }
 }
 
 .chart-title {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 18px;
-  color: var(--text);
+  font-family: var(--font-primary);
+  font-weight: 900;
+  font-size: 19px;
+  color: var(--black);
   margin-bottom: 4px;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
+  line-height: 1.2;
 }
 .chart-sub { display: none; }
 .chart-crime {
@@ -455,20 +479,41 @@ select:hover { border-color: var(--black); background-color: #fff; }
 .movers-col-title.down { color: var(--charcoal); }
 .mover-row {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 1rem;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.5rem 1rem;
   align-items: baseline;
-  padding: 8px 0;
+  padding: 10px 0;
   border-bottom: 1px dotted var(--border-soft);
   font-size: 13px;
 }
 .mover-row:last-child { border-bottom: none; }
-.mover-name { color: var(--text); font-weight: 400; }
-.mover-right { text-align: right; }
-.mover-pct { font-weight: 900; font-size: 15px; font-variant-numeric: tabular-nums; }
+.mover-name {
+  color: var(--text);
+  font-weight: 400;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mover-counts {
+  font-size: 11px;
+  color: var(--charcoal);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.mover-pct {
+  font-weight: 900;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
 .mover-pct.up { color: #d2232a; }
 .mover-pct.down { color: #57aa4a; }
-.mover-counts { font-size: 11px; color: var(--charcoal); display: block; }
+/* The right-aligned pct block (third child) */
+.mover-row > div[style*="text-align:right"] {
+  min-width: 70px;
+}
 
 /* ── Tooltips ─── */
 .tooltip {
@@ -894,6 +939,10 @@ function buildApp() {
       </div>
     </div>
     <div class="metrics" id="metrics-row"></div>
+
+    <div class="section-head">Trends over time</div>
+    <div class="section-intro">How complaints this year compare to last, and where the current moment sits in the twenty-year history.</div>
+
     <div class="two-col-equal">
       <div class="chart-section">
         <div class="chart-rule"></div>
@@ -935,6 +984,10 @@ function buildApp() {
         <div class="chart-csv-row"><button class="csv-btn" data-csv="trend">Download CSV ↓</button></div>
       </div>
     </div>
+
+    <div class="section-head">Where it's happening</div>
+    <div class="section-intro">The month-by-month pattern against last year, and how complaints break out across the five boroughs.</div>
+
     <div class="two-col">
       <div class="chart-section">
         <div class="chart-rule"></div>
@@ -971,6 +1024,10 @@ function buildApp() {
         <div class="chart-csv-row"><button class="csv-btn" data-csv="boro">Download CSV ↓</button></div>
       </div>
     </div>
+
+    <div class="section-head">What's moving</div>
+    <div class="section-intro">The offense types with the biggest year-over-year shifts so far.</div>
+
     <div class="movers-section" id="movers-section">
       <div class="chart-rule"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:10px;">
@@ -993,6 +1050,9 @@ function buildApp() {
       </div>
       <div class="chart-csv-row"><button class="csv-btn" data-csv="movers">Download CSV ↓</button></div>
     </div>
+    <div class="section-head">Precinct map</div>
+    <div class="section-intro">Each of the city's 77 precincts, shaded by year-over-year change. Click a precinct to filter the charts above.</div>
+
     <!-- Map section -->
     <div class="chart-section" style="margin-bottom:3rem;">
       <div class="chart-rule"></div>
